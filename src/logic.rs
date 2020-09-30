@@ -71,7 +71,7 @@ pub fn run(args: Arguments) -> Result<()> {
 
     let files = filter_files(read.unwrap());
 
-    let fmt = "{folder}/{prefix}_{number:0>10}";
+    let fmt = "{folder}/{prefix}_{number:0>10}{ext}";
 
     let mut count = args.origin;
 
@@ -86,7 +86,9 @@ pub fn run(args: Arguments) -> Result<()> {
     let files = files
         .iter()
         .map(|x| {
+            let ext = x.extension().unwrap_or_default();
             map.insert("number".to_string(), format!("{}", count));
+            map.insert("ext".to_string(), ext.to_string_lossy().to_string());
             count += 1;
             RenameFile {
                 original_path: x.clone(),
