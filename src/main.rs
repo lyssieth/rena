@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use clap::{crate_authors, crate_description, crate_version, App, Arg, ArgSettings, ValueHint};
 use color_eyre::{install, Result};
 use paris::{error, info};
@@ -26,7 +28,7 @@ fn build_app() -> App<'static> {
         .about(crate_description!())
         .arg(
             Arg::new("folder")
-                .about("Path to the image folder")
+                .about("Path to the folder containing items")
                 .index(1)
                 .takes_value(true)
                 .required(true)
@@ -56,12 +58,13 @@ fn build_app() -> App<'static> {
         .arg(
             Arg::new("prefix")
                 .about("Prefix for every file")
+                .long_about("Prefix for every file, without any delimiters. Defaults to `item`.")
                 .takes_value(true)
                 .short('p')
                 .long("prefix")
                 .required(false)
-                .default_value("image_")
-                .default_missing_value("image_")
+                .default_value("item")
+                .default_missing_value("item")
                 .unset_setting(ArgSettings::UseValueDelimiter),
         )
 }

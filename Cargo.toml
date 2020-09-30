@@ -1,15 +1,14 @@
 [package]
 authors = ["Lyssieth <raxixor@rax.ee>"]
+description = "A file renaming utility."
 edition = "2018"
 name = "rena"
 version = "0.1.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 clap = "3.0.0-beta.2"
 color-eyre = "0.5"
-mime = "0.3"
 paris = {version = "1.5", features = ["macros", "timestamps", "no_logger"]}
-regex = "1.3"
-tree_magic = "0.2"
+rayon = "1.4"
+# regex = "1.3"
+strfmt = "0.1"

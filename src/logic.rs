@@ -1,7 +1,12 @@
 use clap::ArgMatches;
 use color_eyre::{eyre::eyre, Result};
 use paris::warn;
-use std::{fs::ReadDir, path::PathBuf};
+use rayon::prelude::*;
+use std::{
+    collections::HashMap,
+    fs::{self, ReadDir},
+    path::PathBuf,
+};
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct Arguments {
@@ -9,6 +14,11 @@ pub struct Arguments {
     pub yes: bool,
     pub origin: usize,
     pub prefix: String,
+}
+
+struct RenameFile {
+    pub original_path: PathBuf,
+    pub new_path: PathBuf,
 }
 
 impl Into<Arguments> for ArgMatches {
@@ -59,12 +69,48 @@ pub fn run(args: Arguments) -> Result<()> {
         )));
     }
 
-    let images = get_images(read.unwrap());
+    let files = filter_files(read.unwrap());
+
+    let fmt = "{folder}/{prefix}_{number:0>10}";
+
+    let mut count = args.origin;
+
+    let mut map = HashMap::new();
+
+    map.insert(
+        "folder".to_string(),
+        args.folder.to_string_lossy().to_string(),
+    );
+    map.insert("prefix".to_string(), args.prefix);
+
+    let files = files
+        .iter()
+        .map(|x| {
+            map.insert("number".to_string(), format!("{}", count));
+            count += 1;
+            RenameFile {
+                original_path: x.clone(),
+                new_path: strfmt::strfmt(fmt, &map).unwrap().into(),
+            }
+        })
+        .collect::<Vec<RenameFile>>();
+
+    files
+        .par_iter()
+        .for_each(|x| match fs::rename(&x.original_path, &x.new_path) {
+            Ok(_) => {}
+            Err(e) => warn!(
+                "Failed to rename `{}` to `{}`: {}",
+                x.original_path.to_string_lossy(),
+                x.new_path.to_string_lossy(),
+                e
+            ),
+        });
 
     Ok(())
 }
 
-fn get_images(read: ReadDir) -> Vec<PathBuf> {
+fn filter_files(read: ReadDir) -> Vec<PathBuf> {
     let images = read.filter(|x| match x {
         Err(e) => {
             warn!("Unable to read item: {}", e);
@@ -84,13 +130,7 @@ fn get_images(read: ReadDir) -> Vec<PathBuf> {
 
             let item_type = item_type.unwrap();
 
-            if item_type.is_dir() || item_type.is_symlink() {
-                return false;
-            }
-
-            let mime = tree_magic::from_filepath(&item.path());
-
-            mime.starts_with(mime::IMAGE.as_str())
+            item_type.is_file()
         }
     });
 
