@@ -14,6 +14,7 @@ pub struct Arguments {
     pub yes: bool,
     pub origin: usize,
     pub prefix: String,
+    pub padding: usize,
 }
 
 struct RenameFile {
@@ -33,18 +34,21 @@ impl Into<Arguments> for ArgMatches {
         let prefix = self
             .value_of_t::<String>("prefix")
             .expect("Unable to find 'prefix' argument or use default");
+        let padding = self
+            .value_of_t::<usize>("padding")
+            .expect("Unable to turn 'padding' argument into usize");
 
         Arguments {
             folder,
             yes,
             origin,
             prefix,
+            padding,
         }
     }
 }
 
 pub fn run(args: Arguments) -> Result<()> {
-    dbg!(&args);
     if !args.folder.exists() {
         return Err(eyre!(format!(
             "Folder `{}` does not exist.",
@@ -71,7 +75,7 @@ pub fn run(args: Arguments) -> Result<()> {
 
     let files = filter_files(read.unwrap());
 
-    let fmt = "{folder}/{prefix}_{number:0>10}{ext}";
+    let fmt = "{folder}/{prefix}_{number:0>NUM}{ext}".replace("NUM", &format!("{}", args.padding));
 
     let mut count = args.origin;
 
@@ -93,16 +97,33 @@ pub fn run(args: Arguments) -> Result<()> {
             map.insert("number".to_string(), format!("{}", count));
             map.insert("ext".to_string(), ext);
             count += 1;
-            RenameFile {
+            let mut rf = RenameFile {
                 original_path: x.clone(),
-                new_path: strfmt::strfmt(fmt, &map).unwrap().into(),
+                new_path: strfmt::strfmt(&fmt, &map).unwrap().into(),
+            };
+
+            while rf.new_path.exists() {
+                count += 1;
+                map.insert("number".to_string(), format!("{}", count));
+                rf = RenameFile {
+                    original_path: x.clone(),
+                    new_path: strfmt::strfmt(&fmt, &map).unwrap().into(),
+                };
             }
+
+            rf
         })
         .collect::<Vec<RenameFile>>();
 
-    files
-        .par_iter()
-        .for_each(|x| match fs::rename(&x.original_path, &x.new_path) {
+    files.par_iter().for_each(|x| {
+        if x.new_path.exists() {
+            warn!(
+                "File `{}` already exists, unable to rename.",
+                x.new_path.to_string_lossy()
+            );
+            return;
+        }
+        match fs::rename(&x.original_path, &x.new_path) {
             Ok(_) => {}
             Err(e) => warn!(
                 "Failed to rename `{}` to `{}`: {}",
@@ -110,7 +131,8 @@ pub fn run(args: Arguments) -> Result<()> {
                 x.new_path.to_string_lossy(),
                 e
             ),
-        });
+        }
+    });
 
     Ok(())
 }

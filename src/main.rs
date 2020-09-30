@@ -14,6 +14,7 @@ fn main() -> Result<()> {
 
     let matches = app.get_matches();
 
+    info!("Starting execution...");
     match logic::run(matches.into()) {
         Ok(_) => info!("Completed successfully!"),
         Err(e) => error!("Encountered an error: {}", e),
@@ -45,7 +46,7 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("origin")
-                .about("Number to start counting at")
+                .about("Number to start counting at. Default: 0")
                 .takes_value(true)
                 .short('n')
                 .long("origin")
@@ -65,6 +66,16 @@ fn build_app() -> App<'static> {
                 .required(false)
                 .default_value("item")
                 .default_missing_value("item")
+                .unset_setting(ArgSettings::UseValueDelimiter),
+        )
+        .arg(
+            Arg::new("padding")
+                .about("Amount of padding to add to a file. Default: 10")
+                .takes_value(true)
+                .long("padding")
+                .required(false)
+                .default_value("10")
+                .default_missing_value("10")
                 .unset_setting(ArgSettings::UseValueDelimiter),
         )
 }
