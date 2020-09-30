@@ -1,7 +1,6 @@
-use std::path::PathBuf;
-
-use clap::{crate_authors, crate_description, crate_version, App, Arg, ValueHint};
+use clap::{crate_authors, crate_description, crate_version, App, Arg, ArgSettings, ValueHint};
 use color_eyre::{install, Result};
+use paris::{error, info};
 
 mod logic;
 mod util;
@@ -13,29 +12,10 @@ fn main() -> Result<()> {
 
     let matches = app.get_matches();
 
-    let folder = matches
-        .value_of_t::<PathBuf>("folder")
-        .expect("Unable to turn 'folder' argument into path");
-    let save_log = matches
-        .value_of_t::<bool>("save-log")
-        .expect("Unable to turn 'save-log' argument into bool");
-    let yes = matches
-        .value_of_t::<bool>("yes")
-        .expect("Unable to turn 'yes' argument into bool");
-    let origin = matches
-        .value_of_t::<usize>("origin")
-        .expect("Unable to turn 'origin' argument into usize");
-    let prefix = matches
-        .value_of_t::<String>("prefix")
-        .expect("Unable to find 'prefix' argument or use default");
-
-    logic::run(logic::Arguments {
-        folder,
-        save_log,
-        yes,
-        origin,
-        prefix,
-    })?;
+    match logic::run(matches.into()) {
+        Ok(_) => info!("Completed successfully!"),
+        Err(e) => error!("Encountered an error: {}", e),
+    }
     Ok(())
 }
 
@@ -55,13 +35,6 @@ fn build_app() -> App<'static> {
                 .validator(util::validate_directory),
         )
         .arg(
-            Arg::new("save-log")
-                .about("Save a log file to [rename.log]")
-                .takes_value(false)
-                .short('l')
-                .long("save-log"),
-        )
-        .arg(
             Arg::new("yes")
                 .about("Automatically answers 'yes' to prompts.")
                 .takes_value(false)
@@ -77,7 +50,8 @@ fn build_app() -> App<'static> {
                 .required(false)
                 .default_value("0")
                 .default_missing_value("0")
-                .validator(util::validate_usize),
+                .validator(util::validate_usize)
+                .unset_setting(ArgSettings::UseValueDelimiter),
         )
         .arg(
             Arg::new("prefix")
@@ -86,7 +60,8 @@ fn build_app() -> App<'static> {
                 .short('p')
                 .long("prefix")
                 .required(false)
-                .default_value("")
-                .default_missing_value(""),
+                .default_value("image_")
+                .default_missing_value("image_")
+                .unset_setting(ArgSettings::UseValueDelimiter),
         )
 }
