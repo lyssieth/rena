@@ -1,6 +1,6 @@
 use clap::ArgMatches;
 use color_eyre::{eyre::eyre, Result};
-use paris::warn;
+use paris::{info, warn};
 use rayon::prelude::*;
 use std::{
     collections::HashMap,
@@ -97,21 +97,22 @@ pub fn run(args: Arguments) -> Result<()> {
             map.insert("number".to_string(), format!("{}", count));
             map.insert("ext".to_string(), ext);
             count += 1;
-            let mut rf = RenameFile {
+
+            RenameFile {
                 original_path: x.clone(),
                 new_path: strfmt::strfmt(&fmt, &map).unwrap().into(),
-            };
-
-            while rf.new_path.exists() {
-                count += 1;
-                map.insert("number".to_string(), format!("{}", count));
-                rf = RenameFile {
-                    original_path: x.clone(),
-                    new_path: strfmt::strfmt(&fmt, &map).unwrap().into(),
-                };
             }
-
-            rf
+        })
+        .filter(|x| {
+            if x.new_path.exists() {
+                warn!(
+                    "File `{}` already exists, unable to rename.",
+                    x.new_path.to_string_lossy()
+                );
+                false
+            } else {
+                true
+            }
         })
         .collect::<Vec<RenameFile>>();
 
@@ -124,7 +125,13 @@ pub fn run(args: Arguments) -> Result<()> {
             return;
         }
         match fs::rename(&x.original_path, &x.new_path) {
-            Ok(_) => {}
+            Ok(_) => {
+                info!(
+                    "`{}` -> `{}`",
+                    x.original_path.to_string_lossy(),
+                    x.new_path.to_string_lossy()
+                );
+            }
             Err(e) => warn!(
                 "Failed to rename `{}` to `{}`: {}",
                 x.original_path.to_string_lossy(),
