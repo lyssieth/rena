@@ -145,9 +145,9 @@ pub fn run(args: Arguments) -> Result<()> {
 }
 
 fn filter_files(read: ReadDir) -> Vec<PathBuf> {
-    let images = read.filter(|x| match x {
+    let files = read.filter(|x| match x {
         Err(e) => {
-            warn!("Unable to read item: {}", e);
+            warn!("Unable to read file: {}", e);
             false
         }
         Ok(item) => {
@@ -168,7 +168,7 @@ fn filter_files(read: ReadDir) -> Vec<PathBuf> {
         }
     });
 
-    images
+    files
         .map(|x| {
             let x = x.unwrap();
 

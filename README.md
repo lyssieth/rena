@@ -1,6 +1,6 @@
 # rena
 
-A (simple) renaming utility.
+A (simple?) renaming utility.
 
 ## Requirements
 
