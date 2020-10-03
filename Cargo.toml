@@ -2,13 +2,15 @@
 authors = ["Lyssieth <raxixor@rax.ee>"]
 description = "A file renaming utility."
 edition = "2018"
+license = "MIT"
 name = "rena"
+private = true
 version = "0.1.0"
 
 [dependencies]
 clap = "3.0.0-beta.2"
 color-eyre = "0.5.5"
-paris = { version = "1.5.7", features = ["macros", "timestamps", "no_logger"] }
+paris = {version = "1.5.7", features = ["macros", "timestamps", "no_logger"]}
 rayon = "1.4.1"
 # regex = "1.3"
 strfmt = "0.1.6"
