@@ -13,4 +13,4 @@ A (simple?) renaming utility.
 
 ## Usage
 
-See `--help`
+See `--help` for now, full documentation to come.
