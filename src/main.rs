@@ -38,11 +38,11 @@ fn build_app() -> App<'static> {
                 .validator(util::validate_directory),
         )
         .arg(
-            Arg::new("yes")
-                .about("Automatically answers 'yes' to prompts.")
+            Arg::new("verbose")
+                .about("Turns on some (potentially) annoying logging for more verbose output.")
                 .takes_value(false)
-                .short('y')
-                .long("yes"),
+                .long("verbose")
+                .required(false),
         )
         .arg(
             Arg::new("origin")
@@ -77,5 +77,15 @@ fn build_app() -> App<'static> {
                 .default_value("10")
                 .default_missing_value("10")
                 .unset_setting(ArgSettings::UseValueDelimiter),
+        )
+        .arg(
+            Arg::new("match")
+                .about("Valid RegEx for matching input files (does not support capture groups yet)")
+                .takes_value(true)
+                .short('m')
+                .long("match")
+                .required(false)
+                .unset_setting(ArgSettings::UseValueDelimiter)
+                .validator(util::validate_regex),
         )
 }

@@ -1,20 +1,22 @@
 use clap::ArgMatches;
 use color_eyre::{eyre::eyre, Result};
-use paris::{info, warn};
+use paris::{error, info, warn};
 use rayon::prelude::*;
+use regex::Regex;
 use std::{
     collections::HashMap,
     fs::{self, ReadDir},
     path::PathBuf,
 };
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Arguments {
     pub folder: PathBuf,
-    pub yes: bool,
+    pub verbose: bool,
     pub origin: usize,
     pub prefix: String,
     pub padding: usize,
+    pub match_regex: Option<Regex>,
 }
 
 struct RenameFile {
@@ -27,7 +29,7 @@ impl Into<Arguments> for ArgMatches {
         let folder = self
             .value_of_t::<PathBuf>("folder")
             .expect("Unable to turn 'folder' argument into path");
-        let yes = self.is_present("yes");
+        let verbose = self.is_present("verbose");
         let origin = self
             .value_of_t::<usize>("origin")
             .expect("Unable to turn 'origin' argument into usize");
@@ -37,18 +39,33 @@ impl Into<Arguments> for ArgMatches {
         let padding = self
             .value_of_t::<usize>("padding")
             .expect("Unable to turn 'padding' argument into usize");
+        let match_regex = match self.value_of("match") {
+            Some(regex) => {
+                let a = Regex::new(regex);
+                match a {
+                    Ok(a) => Some(a),
+                    Err(e) => {
+                        error!("Unable to parse regex `{}`: {}", regex, e);
+                        std::process::exit(1);
+                    }
+                }
+            }
+            None => None,
+        };
 
         Arguments {
             folder,
-            yes,
+            verbose,
             origin,
             prefix,
             padding,
+            match_regex,
         }
     }
 }
 
 pub fn run(args: Arguments) -> Result<()> {
+    let verbose = args.verbose;
     if !args.folder.exists() {
         return Err(eyre!(format!(
             "Folder `{}` does not exist.",
@@ -72,8 +89,12 @@ pub fn run(args: Arguments) -> Result<()> {
             e
         )));
     }
+    let read = read.unwrap();
 
-    let files = filter_files(read.unwrap());
+    let files = match args.match_regex {
+        Some(r) => filter_files_regex(read, r),
+        None => filter_files(read),
+    };
 
     let fmt = "{folder}/{prefix}_{number:0>NUM}{ext}".replace("NUM", &format!("{}", args.padding));
 
@@ -126,11 +147,13 @@ pub fn run(args: Arguments) -> Result<()> {
         }
         match fs::rename(&x.original_path, &x.new_path) {
             Ok(_) => {
-                info!(
-                    "`{}` -> `{}`",
-                    x.original_path.to_string_lossy(),
-                    x.new_path.to_string_lossy()
-                );
+                if verbose {
+                    info!(
+                        "`{}` -> `{}`",
+                        x.original_path.to_string_lossy(),
+                        x.new_path.to_string_lossy()
+                    );
+                }
             }
             Err(e) => warn!(
                 "Failed to rename `{}` to `{}`: {}",
@@ -175,4 +198,9 @@ fn filter_files(read: ReadDir) -> Vec<PathBuf> {
             x.path()
         })
         .collect::<Vec<PathBuf>>()
+}
+
+//TODO: Write a filter function that uses regex
+fn filter_files_regex(read: ReadDir, regex: Regex) -> Vec<PathBuf> {
+    todo!("Write a filter function that uses regex")
 }

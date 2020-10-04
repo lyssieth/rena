@@ -18,3 +18,12 @@ pub fn validate_usize(input: &str) -> Result<(), String> {
         Err(e) => Err(format!("Failed to parse usize: {}", e.to_string())),
     }
 }
+
+pub fn validate_regex(input: &str) -> Result<(), String> {
+    let a = regex::Regex::new(input);
+
+    match a {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to parse regex: {}", e)),
+    }
+}
