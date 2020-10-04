@@ -80,7 +80,9 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("match")
-                .about("Valid RegEx for matching input files (does not support capture groups yet)")
+                .about(
+                    "Valid RegEx for matching input files (does not support capture groups yet).",
+                )
                 .takes_value(true)
                 .short('m')
                 .long("match")
