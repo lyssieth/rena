@@ -200,7 +200,33 @@ fn filter_files(read: ReadDir) -> Vec<PathBuf> {
         .collect::<Vec<PathBuf>>()
 }
 
-//TODO: Write a filter function that uses regex
 fn filter_files_regex(read: ReadDir, regex: Regex) -> Vec<PathBuf> {
-    todo!("Write a filter function that uses regex")
+    let files = read.filter(|x| match x {
+        Err(e) => {
+            warn!("Unable to read file: {}", e);
+            false
+        }
+        Ok(item) => {
+            let item_type = item.file_type();
+            let item_name = item.file_name();
+            let item_name = item_name.to_string_lossy();
+
+            if let Err(e) = item_type {
+                warn!("Unable to get filetype of {}: {}", item_name, e);
+                return false;
+            }
+
+            let item_type = item_type.unwrap();
+
+            item_type.is_file() && regex.is_match(&item_name)
+        }
+    });
+
+    files
+        .map(|x| {
+            let x = x.unwrap();
+
+            x.path()
+        })
+        .collect::<Vec<PathBuf>>()
 }
