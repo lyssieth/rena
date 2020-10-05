@@ -2,14 +2,14 @@ stages:
     - lint
     - test
 
-lint:
+nightly-lint:
     stage: lint
-    image: rust:latest
+    image: rustlang/rust:nightly
     script:
         - cargo clippy --verbose
 
-test:
-    stage: build
+nightly-test:
+    stage: test
     image: rustlang/rust:nightly
     script:
         - cargo test --verbose
