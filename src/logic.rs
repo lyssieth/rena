@@ -24,22 +24,22 @@ struct RenameFile {
     pub new_path: PathBuf,
 }
 
-impl Into<Arguments> for ArgMatches {
-    fn into(self) -> Arguments {
-        let folder = self
+impl From<ArgMatches> for Arguments {
+    fn from(a: ArgMatches) -> Self {
+        let folder = a
             .value_of_t::<PathBuf>("folder")
             .expect("Unable to turn 'folder' argument into path");
-        let verbose = self.is_present("verbose");
-        let origin = self
+        let verbose = a.is_present("verbose");
+        let origin = a
             .value_of_t::<usize>("origin")
             .expect("Unable to turn 'origin' argument into usize");
-        let prefix = self
+        let prefix = a
             .value_of_t::<String>("prefix")
             .expect("Unable to find 'prefix' argument or use default");
-        let padding = self
+        let padding = a
             .value_of_t::<usize>("padding")
             .expect("Unable to turn 'padding' argument into usize");
-        let match_regex = match self.value_of("match") {
+        let match_regex = match a.value_of("match") {
             Some(regex) => {
                 let a = Regex::new(regex);
                 match a {
