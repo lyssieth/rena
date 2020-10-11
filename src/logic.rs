@@ -22,7 +22,7 @@ SOFTWARE.
 */
 use clap::ArgMatches;
 use color_eyre::{eyre::eyre, Result};
-use paris::{error, info, warn};
+use paris::{info, warn};
 use rayon::prelude::*;
 use regex::Regex;
 use std::{
@@ -68,15 +68,14 @@ impl From<ArgMatches> for Arguments {
                 match a {
                     Ok(a) => Some(a),
                     Err(e) => {
-                        error!("Unable to parse regex `{}`: {}", regex, e);
-                        std::process::exit(1);
+                        panic!("Unable to parse regex `{}`: {}", regex, e);
                     }
                 }
             }
             None => None,
         };
 
-        Arguments {
+        Self {
             folder,
             verbose,
             origin,
