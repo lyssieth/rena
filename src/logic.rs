@@ -39,6 +39,7 @@ pub struct Arguments {
     pub prefix: String,
     pub padding: usize,
     pub match_regex: Option<Regex>,
+    pub match_rename: String,
 }
 
 #[derive(Debug, Clone)]
@@ -74,6 +75,9 @@ impl From<ArgMatches> for Arguments {
             }
             None => None,
         };
+        let match_rename = a
+            .value_of_t::<String>("match-rename")
+            .expect("Unable to turn 'match-rename' argument into String");
 
         Self {
             folder,
@@ -82,6 +86,7 @@ impl From<ArgMatches> for Arguments {
             prefix,
             padding,
             match_regex,
+            match_rename,
         }
     }
 }
@@ -187,6 +192,16 @@ pub fn run(args: Arguments) -> Result<()> {
     });
 
     Ok(())
+}
+
+// TODO: Move all current logic here.
+fn rename_normal(args: Arguments) -> Result<()> {
+    panic!("This is unimplemented!");
+}
+
+// TODO: Write new logic for regex renaming.
+fn rename_regex(args: Arguments) -> Result<()> {
+    panic!("This is unimplemented!");
 }
 
 fn filter_files(read: ReadDir) -> Vec<PathBuf> {

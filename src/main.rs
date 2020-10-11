@@ -102,14 +102,21 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("match")
-                .about(
-                    "Valid RegEx for matching input files (does not support capture groups yet).",
-                )
+                .about("Valid RegEx for matching input files (see 'match-rename' argument).")
                 .takes_value(true)
                 .short('m')
                 .long("match")
                 .required(false)
                 .unset_setting(ArgSettings::UseValueDelimiter)
                 .validator(util::validate_regex),
+        )
+        .arg(
+            Arg::new("match-rename")
+                .about("Use capture groups from 'match' argument to rename files.\n   Capture group numbers need a `$` prefix.\n   So `$1` for the first, `$2` for the second, and so on.\n   `$0` matches the entire name.")
+                .takes_value(true)
+                .long("match-rename")
+                .requires("match")
+                .required(false)
+                .unset_setting(ArgSettings::UseValueDelimiter),
         )
 }
