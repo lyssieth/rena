@@ -1,9 +1,0 @@
-stages:
-    - test
-
-nightly-test:
-    stage: test
-    image: rustlang/rust:nightly
-    script:
-        - cargo clippy --verbose
-        - cargo test --verbose
