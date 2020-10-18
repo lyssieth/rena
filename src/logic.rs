@@ -39,7 +39,7 @@ pub struct Arguments {
     pub prefix: String,
     pub padding: usize,
     pub match_regex: Option<Regex>,
-    pub match_rename: String,
+    pub match_rename: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -75,9 +75,10 @@ impl From<ArgMatches> for Arguments {
             }
             None => None,
         };
-        let match_rename = a
-            .value_of_t::<String>("match-rename")
-            .expect("Unable to turn 'match-rename' argument into String");
+        let match_rename = match a.value_of("match-rename") {
+            Some(a) => Some(a.to_string()),
+            None => None,
+        };
 
         Self {
             folder,
@@ -92,7 +93,6 @@ impl From<ArgMatches> for Arguments {
 }
 
 pub fn run(args: Arguments) -> Result<()> {
-    let verbose = args.verbose;
     if !args.folder.exists() {
         return Err(eyre!(format!(
             "Folder `{}` does not exist.",
@@ -118,11 +118,21 @@ pub fn run(args: Arguments) -> Result<()> {
     }
     let read = read.unwrap();
 
-    let files = match args.match_regex {
+    let files = match &args.match_regex {
         Some(r) => filter_files_regex(read, r),
         None => filter_files(read),
     };
 
+    if args.match_rename.is_some() {
+        rename_regex(files, args)
+    } else {
+        rename_normal(files, args)
+    }
+}
+
+// TODO: Move all current logic here.
+fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
+    let verbose = args.verbose;
     let fmt = "{folder}/{prefix}_{number:0>NUM}{ext}".replace("NUM", &format!("{}", args.padding));
 
     let mut count = args.origin;
@@ -194,14 +204,9 @@ pub fn run(args: Arguments) -> Result<()> {
     Ok(())
 }
 
-// TODO: Move all current logic here.
-fn rename_normal(args: Arguments) -> Result<()> {
-    panic!("This is unimplemented!");
-}
-
-// TODO: Write new logic for regex renaming.
-fn rename_regex(args: Arguments) -> Result<()> {
-    panic!("This is unimplemented!");
+fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
+    todo!("Write new logic for regex renaming");
+    // TODO: Write new logic for regex renaming.
 }
 
 fn filter_files(read: ReadDir) -> Vec<PathBuf> {
@@ -237,7 +242,7 @@ fn filter_files(read: ReadDir) -> Vec<PathBuf> {
         .collect::<Vec<PathBuf>>()
 }
 
-fn filter_files_regex(read: ReadDir, regex: Regex) -> Vec<PathBuf> {
+fn filter_files_regex(read: ReadDir, regex: &Regex) -> Vec<PathBuf> {
     let files = read.filter(|x| match x {
         Err(e) => {
             warn!("Unable to read file: {}", e);
