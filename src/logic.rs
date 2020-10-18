@@ -204,8 +204,62 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
 }
 
 fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
-    todo!("Write new logic for regex renaming");
-    // TODO: Write new logic for regex renaming.
+    let verbose = args.verbose;
+
+    let regex = args.match_regex.unwrap();
+    let match_rename = args.match_rename.unwrap();
+    let files = files
+        .iter()
+        .map(|x| {
+            let text = x.to_string_lossy();
+            let after = regex.replace(&text, match_rename.as_str()).to_string();
+
+            RenameFile {
+                original_path: x.clone(),
+                new_path: after.into(),
+            }
+        })
+        .filter(|x| {
+            if x.new_path.exists() {
+                warn!(
+                    "File `{}` already exists, unable to rename.",
+                    x.new_path.to_string_lossy()
+                );
+                false
+            } else {
+                true
+            }
+        })
+        .collect::<Vec<RenameFile>>();
+
+    files.par_iter().for_each(|x| {
+        if x.new_path.exists() {
+            warn!(
+                "File `{}` already exists, unable to rename.",
+                x.new_path.to_string_lossy()
+            );
+            return;
+        }
+        match fs::rename(&x.original_path, &x.new_path) {
+            Ok(_) => {
+                if verbose {
+                    info!(
+                        "`{}` -> `{}`",
+                        x.original_path.to_string_lossy(),
+                        x.new_path.to_string_lossy()
+                    );
+                }
+            }
+            Err(e) => warn!(
+                "Failed to rename `{}` to `{}`: {}",
+                x.original_path.to_string_lossy(),
+                x.new_path.to_string_lossy(),
+                e
+            ),
+        }
+    });
+
+    Ok(())
 }
 
 fn filter_files(read: ReadDir) -> Vec<PathBuf> {

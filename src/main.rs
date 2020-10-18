@@ -112,7 +112,12 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("match-rename")
-                .about("Use capture groups from 'match' argument to rename files.\n   Capture group numbers need a `$` prefix.\n   So `$1` for the first, `$2` for the second, and so on.\n   `$0` matches the entire name.")
+                .about(
+                    "Use capture groups from 'match' argument to rename files.
+                \n   Capture group numbers need a `$` prefix.
+                \n   So `$1` for the first, `$2` for the second, and so on.
+                \n   `$0` matches the entire name.",
+                )
                 .takes_value(true)
                 .long("match-rename")
                 .requires("match")
