@@ -130,7 +130,6 @@ pub fn run(args: Arguments) -> Result<()> {
     }
 }
 
-// TODO: Move all current logic here.
 fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
     let verbose = args.verbose;
     let fmt = "{folder}/{prefix}_{number:0>NUM}{ext}".replace("NUM", &format!("{}", args.padding));
