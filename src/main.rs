@@ -112,16 +112,26 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("match-rename")
-                .about(
+                .about("Use capture groups from 'match' argument to rename files. See `--help` for more info.")
+                .long_about(
                     "Use capture groups from 'match' argument to rename files.
-                \n   Capture group numbers need a `$` prefix.
-                \n   So `$1` for the first, `$2` for the second, and so on.
-                \n   `$0` matches the entire name.",
+                    Capture group numbers need a `$` prefix, so `$1` for the first, 
+                    `$2` for the second, and so on, with `$0` matching the entire name.
+                    Recommend using `--dry-run` flag.
+                    If it fails to see groups try using `${1}`, as in surround the
+                    group index with `{}`.",
                 )
                 .takes_value(true)
                 .long("match-rename")
                 .requires("match")
                 .required(false)
                 .unset_setting(ArgSettings::UseValueDelimiter),
+        )
+        .arg(
+            Arg::new("dry-run")
+                .about("Disables performing actual renaming.")
+                .takes_value(false)
+                .long("dry-run")
+                .required(false),
         )
 }

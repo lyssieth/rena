@@ -40,6 +40,7 @@ pub struct Arguments {
     pub padding: usize,
     pub match_regex: Option<Regex>,
     pub match_rename: Option<String>,
+    pub dry_run: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -79,6 +80,7 @@ impl From<ArgMatches> for Arguments {
             Some(a) => Some(a.to_string()),
             None => None,
         };
+        let dry_run = a.is_present("dry-run");
 
         Self {
             folder,
@@ -88,6 +90,7 @@ impl From<ArgMatches> for Arguments {
             padding,
             match_regex,
             match_rename,
+            dry_run,
         }
     }
 }
@@ -173,6 +176,7 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
         })
         .collect::<Vec<RenameFile>>();
 
+    let dry_run = args.dry_run;
     files.par_iter().for_each(|x| {
         if x.new_path.exists() {
             warn!(
@@ -181,22 +185,30 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
             );
             return;
         }
-        match fs::rename(&x.original_path, &x.new_path) {
-            Ok(_) => {
-                if verbose {
-                    info!(
-                        "`{}` -> `{}`",
-                        x.original_path.to_string_lossy(),
-                        x.new_path.to_string_lossy()
-                    );
-                }
-            }
-            Err(e) => warn!(
-                "Failed to rename `{}` to `{}`: {}",
+        if dry_run {
+            info!(
+                "[DRY RUN]: `{}` -> `{}`",
                 x.original_path.to_string_lossy(),
-                x.new_path.to_string_lossy(),
-                e
-            ),
+                x.new_path.to_string_lossy()
+            );
+        } else {
+            match fs::rename(&x.original_path, &x.new_path) {
+                Ok(_) => {
+                    if verbose {
+                        info!(
+                            "`{}` -> `{}`",
+                            x.original_path.to_string_lossy(),
+                            x.new_path.to_string_lossy()
+                        );
+                    }
+                }
+                Err(e) => warn!(
+                    "Failed to rename `{}` to `{}`: {}",
+                    x.original_path.to_string_lossy(),
+                    x.new_path.to_string_lossy(),
+                    e
+                ),
+            }
         }
     });
 
@@ -208,15 +220,20 @@ fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
 
     let regex = args.match_regex.unwrap();
     let match_rename = args.match_rename.unwrap();
+    info!("Regex: {}", regex);
+    info!("Input: {}", match_rename);
     let files = files
         .iter()
         .map(|x| {
-            let text = x.to_string_lossy();
+            let text = x.file_name().unwrap().to_string_lossy();
             let after = regex.replace(&text, match_rename.as_str()).to_string();
+            let mut new_x = x.clone();
+
+            new_x.set_file_name(after);
 
             RenameFile {
                 original_path: x.clone(),
-                new_path: after.into(),
+                new_path: new_x,
             }
         })
         .filter(|x| {
@@ -232,6 +249,7 @@ fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
         })
         .collect::<Vec<RenameFile>>();
 
+    let dry_run = args.dry_run;
     files.par_iter().for_each(|x| {
         if x.new_path.exists() {
             warn!(
@@ -240,22 +258,30 @@ fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
             );
             return;
         }
-        match fs::rename(&x.original_path, &x.new_path) {
-            Ok(_) => {
-                if verbose {
-                    info!(
-                        "`{}` -> `{}`",
-                        x.original_path.to_string_lossy(),
-                        x.new_path.to_string_lossy()
-                    );
-                }
-            }
-            Err(e) => warn!(
-                "Failed to rename `{}` to `{}`: {}",
+        if dry_run {
+            info!(
+                "[DRY RUN]: `{}` -> `{}`",
                 x.original_path.to_string_lossy(),
-                x.new_path.to_string_lossy(),
-                e
-            ),
+                x.new_path.to_string_lossy()
+            );
+        } else {
+            match fs::rename(&x.original_path, &x.new_path) {
+                Ok(_) => {
+                    if verbose {
+                        info!(
+                            "`{}` -> `{}`",
+                            x.original_path.to_string_lossy(),
+                            x.new_path.to_string_lossy()
+                        );
+                    }
+                }
+                Err(e) => warn!(
+                    "Failed to rename `{}` to `{}`: {}",
+                    x.original_path.to_string_lossy(),
+                    x.new_path.to_string_lossy(),
+                    e
+                ),
+            }
         }
     });
 
