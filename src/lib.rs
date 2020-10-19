@@ -31,7 +31,7 @@ use std::{
     path::PathBuf,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Arguments {
     pub folder: PathBuf,
     pub verbose: bool,
