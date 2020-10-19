@@ -27,7 +27,7 @@ use rayon::prelude::*;
 use regex::Regex;
 use std::{
     collections::HashMap,
-    fs::{self, DirEntry, ReadDir},
+    fs::{self, DirEntry},
     path::PathBuf,
 };
 
