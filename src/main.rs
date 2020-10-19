@@ -26,7 +26,6 @@ use clap::{crate_authors, crate_description, crate_version, App, Arg, ArgSetting
 use color_eyre::{install, Result};
 use paris::{error, info};
 
-mod logic;
 mod util;
 
 fn main() -> Result<()> {
@@ -37,7 +36,7 @@ fn main() -> Result<()> {
     let matches = app.get_matches();
 
     info!("Starting execution...");
-    match logic::run(matches.into()) {
+    match rena::run(matches.into()) {
         Ok(_) => info!("Completed successfully!"),
         Err(e) => error!("Encountered an error: {}", e),
     }

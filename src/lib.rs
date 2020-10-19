@@ -27,7 +27,7 @@ use rayon::prelude::*;
 use regex::Regex;
 use std::{
     collections::HashMap,
-    fs::{self, ReadDir},
+    fs::{self, DirEntry, ReadDir},
     path::PathBuf,
 };
 
@@ -288,7 +288,10 @@ fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
     Ok(())
 }
 
-fn filter_files(read: ReadDir) -> Vec<PathBuf> {
+fn filter_files<I>(read: I) -> Vec<PathBuf>
+where
+    I: Iterator<Item = std::io::Result<DirEntry>>,
+{
     let files = read.filter(|x| match x {
         Err(e) => {
             warn!("Unable to read file: {}", e);
@@ -321,7 +324,10 @@ fn filter_files(read: ReadDir) -> Vec<PathBuf> {
         .collect::<Vec<PathBuf>>()
 }
 
-fn filter_files_regex(read: ReadDir, regex: &Regex) -> Vec<PathBuf> {
+fn filter_files_regex<I>(read: I, regex: &Regex) -> Vec<PathBuf>
+where
+    I: Iterator<Item = std::io::Result<DirEntry>>,
+{
     let files = read.filter(|x| match x {
         Err(e) => {
             warn!("Unable to read file: {}", e);
