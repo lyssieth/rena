@@ -38,9 +38,38 @@ pub struct Arguments {
     pub origin: usize,
     pub prefix: String,
     pub padding: usize,
+    pub padding_direction: PaddingDirection,
     pub match_regex: Option<Regex>,
     pub match_rename: Option<String>,
     pub dry_run: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum PaddingDirection {
+    Left,
+    Right,
+    Middle,
+}
+
+impl Default for PaddingDirection {
+    fn default() -> Self {
+        PaddingDirection::Right
+    }
+}
+
+impl From<String> for PaddingDirection {
+    fn from(a: String) -> Self {
+        let a = a.to_lowercase();
+
+        match a.as_ref() {
+            "left" | "l" | "<" => PaddingDirection::Left,
+            "right" | "r" | ">" => PaddingDirection::Right,
+            "middle" | "m" | "|" => PaddingDirection::Middle,
+            _ => unreachable!(
+                "If this is reached, something in validation has gone *horribly* wrong."
+            ),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -64,6 +93,9 @@ impl From<ArgMatches> for Arguments {
         let padding = a
             .value_of_t::<usize>("padding")
             .expect("Unable to turn 'padding' argument into usize");
+        let padding_direction = a
+            .value_of_t::<String>("padding_direction")
+            .expect("Unable to find 'padding-direction' argument or use default");
         let match_regex = match a.value_of("match") {
             Some(regex) => {
                 let a = Regex::new(regex);
@@ -88,6 +120,7 @@ impl From<ArgMatches> for Arguments {
             origin,
             prefix,
             padding,
+            padding_direction: padding_direction.into(),
             match_regex,
             match_rename,
             dry_run,
@@ -135,7 +168,17 @@ pub fn run(args: Arguments) -> Result<()> {
 
 fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
     let verbose = args.verbose;
-    let fmt = "{folder}/{prefix}_{number:0>NUM}{ext}".replace("NUM", &format!("{}", args.padding));
+    let fmt = match args.padding_direction {
+        PaddingDirection::Left => {
+            "{folder}/{prefix}_{number:0<NUM}{ext}".replace("NUM", &format!("{}", args.padding))
+        }
+        PaddingDirection::Right => {
+            "{folder}/{prefix}_{number:0>NUM}{ext}".replace("NUM", &format!("{}", args.padding))
+        }
+        PaddingDirection::Middle => {
+            "{folder}/{prefix}_{number:0|NUM}{ext}".replace("NUM", &format!("{}", args.padding))
+        }
+    };
 
     let mut count = args.origin;
 

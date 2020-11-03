@@ -80,7 +80,7 @@ fn build_app() -> App<'static> {
         .arg(
             Arg::new("prefix")
                 .about("Prefix for every file")
-                .long_about("Prefix for every file, without any delimiters. Defaults to `item`.")
+                .long_about("Prefix for every file, without any delimiters.")
                 .takes_value(true)
                 .short('p')
                 .long("prefix")
@@ -91,7 +91,7 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("padding")
-                .about("Amount of padding to add to a file. Default: 10")
+                .about("Amount of padding to add to a file.")
                 .takes_value(true)
                 .long("padding")
                 .required(false)
@@ -99,6 +99,15 @@ fn build_app() -> App<'static> {
                 .default_missing_value("10")
                 .unset_setting(ArgSettings::UseValueDelimiter),
         )
+        .arg(Arg::new("padding-direction")
+            .about("Changes the direction of the padding.")
+            .takes_value(true)
+            .long("padding-direction")
+            .required(false)
+            .default_value("left")
+            .default_missing_value("left")
+            .possible_values(&["left", "l", "<", "middle", "m", "|", "right", "r", ">"])
+            .unset_setting(ArgSettings::UseValueDelimiter))
         .arg(
             Arg::new("match")
                 .about("Valid RegEx for matching input files (see 'match-rename' argument).")
