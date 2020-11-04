@@ -23,7 +23,6 @@ SOFTWARE.
 use clap::ArgMatches;
 use color_eyre::{eyre::eyre, Result};
 use paris::{info, warn};
-use rayon::prelude::*;
 use regex::Regex;
 use std::{
     collections::HashMap,
@@ -220,7 +219,7 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
         .collect::<Vec<RenameFile>>();
 
     let dry_run = args.dry_run;
-    files.par_iter().for_each(|x| {
+    files.iter().for_each(|x| {
         if x.new_path.exists() {
             warn!(
                 "File `{}` already exists, unable to rename.",
@@ -293,7 +292,7 @@ fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
         .collect::<Vec<RenameFile>>();
 
     let dry_run = args.dry_run;
-    files.par_iter().for_each(|x| {
+    files.iter().for_each(|x| {
         if x.new_path.exists() {
             warn!(
                 "File `{}` already exists, unable to rename.",
