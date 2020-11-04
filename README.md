@@ -46,3 +46,28 @@ item_0000000001.jpg
 item_0000000002.jpg
 item_0000000003.jpg
 ```
+
+#### Regex Filtering
+
+Let's say there's a directory named `Show` with the following structure:
+
+```md
+Show.S01E01.1080p.mkv
+Show.S01E02.1080p.mkv
+Show.S01E03.1080p.mkv
+Show.S02E01.1080p.mkv
+Show.S02E02.1080p.mkv
+Show.S02E03.1080p.mkv
+```
+
+After running `rena --match "Show\.S(\d+)E(\d+)\.1080p\.mkv" --match-rename "Show S${1} E${2} (1080p).mkv" Show/`, it will result in:
+<sub>Note: most shells will require escaping the $-sign</sub>
+
+```md
+Show S01 E02 (1080p).mkv
+Show S01 E03 (1080p).mkv
+Show S02 E01 (1080p).mkv
+Show S01 E01 (1080p).mkv
+Show S02 E02 (1080p).mkv
+Show S02 E03 (1080p).mkv
+```
