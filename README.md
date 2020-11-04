@@ -4,6 +4,8 @@
 
 A hopefully-simple bulk-renaming utility.
 
+Its capabilities currently include dry-run, regex and (simply?) tweaked output.
+
 ## Requirements
 
 - clap
