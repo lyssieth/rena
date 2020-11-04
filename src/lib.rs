@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-use clap::ArgMatches;
+use clap::{ArgMatches, ErrorKind};
 use color_eyre::{eyre::eyre, Result};
 use paris::{info, warn};
 use regex::Regex;
@@ -92,9 +92,16 @@ impl From<ArgMatches> for Arguments {
         let padding = a
             .value_of_t::<usize>("padding")
             .expect("Unable to turn 'padding' argument into usize");
-        let padding_direction = a
-            .value_of_t::<String>("padding_direction")
-            .expect("Unable to find 'padding-direction' argument or use default");
+        let padding_direction = match a.value_of_t::<String>("padding_direction") {
+            Ok(value) => PaddingDirection::from(value),
+            Err(e) => {
+                if e.kind == ErrorKind::ArgumentNotFound {
+                    PaddingDirection::Right
+                } else {
+                    panic!("Invalid `--padding-direction argument.`")
+                }
+            }
+        };
         let match_regex = match a.value_of("match") {
             Some(regex) => {
                 let a = Regex::new(regex);
@@ -119,7 +126,7 @@ impl From<ArgMatches> for Arguments {
             origin,
             prefix,
             padding,
-            padding_direction: padding_direction.into(),
+            padding_direction,
             match_regex,
             match_rename,
             dry_run,

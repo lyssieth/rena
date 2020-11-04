@@ -100,12 +100,10 @@ fn build_app() -> App<'static> {
                 .unset_setting(ArgSettings::UseValueDelimiter),
         )
         .arg(Arg::new("padding-direction")
-            .about("Changes the direction of the padding.")
+            .about("Changes the direction of the padding. Defaults ro `right`")
             .takes_value(true)
             .long("padding-direction")
             .required(false)
-            .default_value("left")
-            .default_missing_value("left")
             .possible_values(&["left", "l", "<", "middle", "m", "|", "right", "r", ">"])
             .unset_setting(ArgSettings::UseValueDelimiter))
         .arg(
