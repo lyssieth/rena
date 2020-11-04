@@ -47,7 +47,7 @@ item_0000000002.jpg
 item_0000000003.jpg
 ```
 
-#### Regex Filtering
+#### Regex Usage
 
 Let's say there's a directory named `Show` with the following structure:
 
