@@ -47,6 +47,32 @@ item_0000000002.jpg
 item_0000000003.jpg
 ```
 
+#### Regex Filtering
+
+Let's say there's a directory named `images` with the following structure:
+
+```md
+image.jpg
+image3.mp4
+12746uju21.jpg
+17f29a002.jpg
+17f2121wss.png
+ffe_image_breaker.webm
+potential_effort.jpg
+```
+
+After running `rena images/`, it will result in:
+
+```md
+ffe_image_breaker.webm
+image3.mp4
+item_0000000000.jpg
+item_0000000001.jpg
+item_0000000002.png
+item_0000000003.jpg
+item_0000000004.jpg
+```
+
 #### Regex Usage
 
 Let's say there's a directory named `Show` with the following structure:
