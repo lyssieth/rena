@@ -1,5 +1,7 @@
 # rena
 
+![crates.io](https://img.shields.io/crates/v/rena)
+
 A (simple?) renaming utility.
 
 ## Requirements
