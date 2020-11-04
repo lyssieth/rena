@@ -25,6 +25,8 @@ See `-h` or `--help` for all flags.
 
 ### Examples
 
+Currently only has the most basic execution mode covered, I hope to add more.
+
 #### Most Basic
 
 Let's say there's a directory named `images` with the following structure:
