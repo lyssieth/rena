@@ -7,10 +7,9 @@ A (simple?) renaming utility.
 - clap
 - color-eyre
 - paris
-- rayon
 - strfmt
-- regex (soon)
+- regex
 
 ## Usage
 
-See `--help` for now, full documentation to come.
+See `-h` or `--help` for now, full documentation to come.
