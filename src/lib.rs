@@ -93,10 +93,11 @@ impl From<ArgMatches> for Arguments {
             .value_of_t::<usize>("padding")
             .expect("Unable to turn 'padding' argument into usize");
         let padding_direction = match a.value_of_t::<String>("padding_direction") {
+            // For some reason the default wasn't working here so I removed it and made it manually default
             Ok(value) => PaddingDirection::from(value),
             Err(e) => {
                 if e.kind == ErrorKind::ArgumentNotFound {
-                    PaddingDirection::Right
+                    PaddingDirection::default()
                 } else {
                     panic!("Invalid `--padding-direction argument.`")
                 }
@@ -172,6 +173,7 @@ pub fn run(args: Arguments) -> Result<()> {
     }
 }
 
+// Janky, but it works. I think. We'll see, hopefully.
 fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
     let verbose = args.verbose;
     let fmt = match args.padding_direction {
@@ -264,13 +266,12 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
     Ok(())
 }
 
+// TODO: Improve somehow? No idea how, but it could probably be done better than this jank.
 fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
     let verbose = args.verbose;
 
     let regex = args.match_regex.unwrap();
     let match_rename = args.match_rename.unwrap();
-    info!("Regex: {}", regex);
-    info!("Input: {}", match_rename);
     let files = files
         .iter()
         .map(|x| {
