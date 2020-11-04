@@ -60,7 +60,7 @@ Show.S02E02.1080p.mkv
 Show.S02E03.1080p.mkv
 ```
 
-After running `rena --match "Show\.S(\d+)E(\d+)\.1080p\.mkv" --match-rename "Show S${1} E${2} (1080p).mkv" Show/`, it will result in:
+After running `rena --match "Show\.S(\d+)E(\d+)\.1080p\.mkv" --match-rename "Show S${1} E${2} (1080p).mkv" Show/`, it will result in:  
 <sub>Note: most shells will require escaping the $-sign</sub>
 
 ```md
