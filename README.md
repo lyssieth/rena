@@ -61,7 +61,7 @@ ffe_image_breaker.webm
 potential_effort.jpg
 ```
 
-After running `rena images/`, it will result in:
+After running `rena --match "\.[jpgn]" images/`, it will result in:
 
 ```md
 ffe_image_breaker.webm
