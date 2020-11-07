@@ -8,11 +8,11 @@ license = "MIT"
 name = "rena"
 readme = "README.md"
 repository = "https://github.com/lyssieth/rena"
-version = "1.1.0"
+version = "1.1.1"
 
 [dependencies]
 clap = "3.0.0-beta.2"
-color-eyre = "0.5"
+color-eyre = {version = "0.5", features = ["issue-url"]}
 paris = {version = "1.5", features = ["macros", "no_logger"]}
 regex = "1.4"
 strfmt = "0.1"

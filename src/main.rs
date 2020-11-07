@@ -23,13 +23,16 @@ SOFTWARE.
 #![forbid(unsafe_code)]
 
 use clap::{crate_authors, crate_description, crate_version, App, Arg, ArgSettings, ValueHint};
-use color_eyre::{install, Result};
+use color_eyre::{config::HookBuilder, Result};
 use paris::{error, info};
 
 mod util;
 
 fn main() -> Result<()> {
-    install()?; // Install color_eyre
+    HookBuilder::default()
+        .issue_url("https://github.com/lyssieth/rena/issues/new")
+        .add_issue_metadata("version", env!("CARGO_PKG_VERSION"))
+        .install()?; // Install color_eyre
 
     let app = build_app();
 
