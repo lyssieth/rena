@@ -59,6 +59,13 @@ fn build_app() -> App<'static> {
                 .validator(util::validate_directory),
         )
         .arg(
+            Arg::new("directory")
+                .about("Causes the app to act on directories instead of files.")
+                .takes_value(false)
+                .long("dir")
+                .required(false)
+        )
+        .arg(
             Arg::new("verbose")
                 .about("Turns on some (potentially) annoying logging for more verbose output.")
                 .takes_value(false)

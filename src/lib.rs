@@ -30,9 +30,11 @@ use std::{
     path::PathBuf,
 };
 
+/// All the arguments after being turned into their respective types.
 #[derive(Debug, Clone, Default)]
 pub struct Arguments {
     pub folder: PathBuf,
+    pub directory: bool,
     pub verbose: bool,
     pub origin: usize,
     pub prefix: String,
@@ -43,6 +45,7 @@ pub struct Arguments {
     pub dry_run: bool,
 }
 
+/// Direction in which to pad.
 #[derive(Debug, Clone)]
 pub enum PaddingDirection {
     Left,
@@ -71,8 +74,9 @@ impl From<String> for PaddingDirection {
     }
 }
 
+/// Just an intermediary struct to contain some data.
 #[derive(Debug, Clone)]
-struct RenameFile {
+struct RenameItem {
     pub original_path: PathBuf,
     pub new_path: PathBuf,
 }
@@ -82,6 +86,7 @@ impl From<ArgMatches> for Arguments {
         let folder = a
             .value_of_t::<PathBuf>("folder")
             .expect("Unable to turn 'folder' argument into path");
+        let directory = a.is_present("directory");
         let verbose = a.is_present("verbose");
         let origin = a
             .value_of_t::<usize>("origin")
@@ -123,6 +128,7 @@ impl From<ArgMatches> for Arguments {
 
         Self {
             folder,
+            directory,
             verbose,
             origin,
             prefix,
@@ -161,20 +167,20 @@ pub fn run(args: Arguments) -> Result<()> {
     }
     let read = read.unwrap();
 
-    let files = match &args.match_regex {
-        Some(r) => filter_files_regex(read, r),
-        None => filter_files(read),
+    let items = match &args.match_regex {
+        Some(r) => filter_items_regex(read, args.directory, r),
+        None => filter_items(read, args.directory),
     };
 
     if args.match_rename.is_some() {
-        rename_regex(files, args)
+        rename_regex(items, args)
     } else {
-        rename_normal(files, args)
+        rename_normal(items, args)
     }
 }
 
 // Janky, but it works. I think. We'll see, hopefully.
-fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
+fn rename_normal(items: Vec<PathBuf>, args: Arguments) -> Result<()> {
     let verbose = args.verbose;
     let fmt = match args.padding_direction {
         PaddingDirection::Left => {
@@ -188,6 +194,8 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
         }
     };
 
+    let fmt = if args.directory { fmt + "/" } else { fmt };
+
     let mut count = args.origin;
 
     let mut map = HashMap::new();
@@ -198,7 +206,7 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
     );
     map.insert("prefix".to_string(), args.prefix);
 
-    let files = files
+    let items = items
         .iter()
         .map(|x| {
             let ext = match x.extension() {
@@ -209,7 +217,7 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
             map.insert("ext".to_string(), ext);
             count += 1;
 
-            RenameFile {
+            RenameItem {
                 original_path: x.clone(),
                 new_path: strfmt::strfmt(&fmt, &map).unwrap().into(),
             }
@@ -225,13 +233,13 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
                 true
             }
         })
-        .collect::<Vec<RenameFile>>();
+        .collect::<Vec<RenameItem>>();
 
     let dry_run = args.dry_run;
-    files.iter().for_each(|x| {
+    items.iter().for_each(|x| {
         if x.new_path.exists() {
             warn!(
-                "File `{}` already exists, unable to rename.",
+                "Item `{}` already exists, unable to rename.",
                 x.new_path.to_string_lossy()
             );
             return;
@@ -247,14 +255,14 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
                 Ok(_) => {
                     if verbose {
                         info!(
-                            "`{}` -> `{}`",
+                            "[DONE] `{}` -> `{}`",
                             x.original_path.to_string_lossy(),
                             x.new_path.to_string_lossy()
                         );
                     }
                 }
                 Err(e) => warn!(
-                    "Failed to rename `{}` to `{}`: {}",
+                    "[FAIL] `{}` -> `{}`: {}",
                     x.original_path.to_string_lossy(),
                     x.new_path.to_string_lossy(),
                     e
@@ -267,12 +275,12 @@ fn rename_normal(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
 }
 
 // TODO: Improve somehow? No idea how, but it could probably be done better than this jank.
-fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
+fn rename_regex(items: Vec<PathBuf>, args: Arguments) -> Result<()> {
     let verbose = args.verbose;
 
     let regex = args.match_regex.unwrap();
     let match_rename = args.match_rename.unwrap();
-    let files = files
+    let items = items
         .iter()
         .map(|x| {
             let text = x.file_name().unwrap().to_string_lossy();
@@ -281,7 +289,7 @@ fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
 
             new_x.set_file_name(after);
 
-            RenameFile {
+            RenameItem {
                 original_path: x.clone(),
                 new_path: new_x,
             }
@@ -289,7 +297,7 @@ fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
         .filter(|x| {
             if x.new_path.exists() {
                 warn!(
-                    "File `{}` already exists, unable to rename.",
+                    "Item `{}` already exists, unable to rename.",
                     x.new_path.to_string_lossy()
                 );
                 false
@@ -297,13 +305,13 @@ fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
                 true
             }
         })
-        .collect::<Vec<RenameFile>>();
+        .collect::<Vec<RenameItem>>();
 
     let dry_run = args.dry_run;
-    files.iter().for_each(|x| {
+    items.iter().for_each(|x| {
         if x.new_path.exists() {
             warn!(
-                "File `{}` already exists, unable to rename.",
+                "Item `{}` already exists, unable to rename.",
                 x.new_path.to_string_lossy()
             );
             return;
@@ -319,14 +327,14 @@ fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
                 Ok(_) => {
                     if verbose {
                         info!(
-                            "`{}` -> `{}`",
+                            "[DONE] `{}` -> `{}`",
                             x.original_path.to_string_lossy(),
                             x.new_path.to_string_lossy()
                         );
                     }
                 }
                 Err(e) => warn!(
-                    "Failed to rename `{}` to `{}`: {}",
+                    "[FAIL] `{}` -> `{}`: {}",
                     x.original_path.to_string_lossy(),
                     x.new_path.to_string_lossy(),
                     e
@@ -338,13 +346,13 @@ fn rename_regex(files: Vec<PathBuf>, args: Arguments) -> Result<()> {
     Ok(())
 }
 
-fn filter_files<I>(read: I) -> Vec<PathBuf>
+fn filter_items<I>(read: I, dir: bool) -> Vec<PathBuf>
 where
     I: Iterator<Item = std::io::Result<DirEntry>>,
 {
-    let files = read.filter(|x| match x {
+    let items = read.filter(|x| match x {
         Err(e) => {
-            warn!("Unable to read file: {}", e);
+            warn!("Unable to read item: {}", e);
             false
         }
         Ok(item) => {
@@ -361,11 +369,14 @@ where
 
             let item_type = item_type.unwrap();
 
-            item_type.is_file()
+            match dir {
+                true => item_type.is_dir(),
+                false => item_type.is_file(),
+            }
         }
     });
 
-    files
+    items
         .map(|x| {
             let x = x.unwrap();
 
@@ -374,13 +385,13 @@ where
         .collect::<Vec<PathBuf>>()
 }
 
-fn filter_files_regex<I>(read: I, regex: &Regex) -> Vec<PathBuf>
+fn filter_items_regex<I>(read: I, dir: bool, regex: &Regex) -> Vec<PathBuf>
 where
     I: Iterator<Item = std::io::Result<DirEntry>>,
 {
-    let files = read.filter(|x| match x {
+    let items = read.filter(|x| match x {
         Err(e) => {
-            warn!("Unable to read file: {}", e);
+            warn!("Unable to read item: {}", e);
             false
         }
         Ok(item) => {
@@ -395,11 +406,15 @@ where
 
             let item_type = item_type.unwrap();
 
-            item_type.is_file() && regex.is_match(&item_name)
+            regex.is_match(&item_name)
+                && match dir {
+                    true => item_type.is_dir(),
+                    false => item_type.is_file(),
+                }
         }
     });
 
-    files
+    items
         .map(|x| {
             let x = x.unwrap();
 
