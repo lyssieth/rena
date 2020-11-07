@@ -50,7 +50,7 @@ fn build_app() -> App<'static> {
     App::new("rena")
         .version(crate_version!())
         .author(crate_authors!())
-        .about(crate_description!())
+        .about(concat!(crate_description!(), "\nMore info on https://github.com/lyssieth/rena"))
         .arg(
             Arg::new("folder")
                 .about("Path to the folder containing items")

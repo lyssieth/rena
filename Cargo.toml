@@ -1,6 +1,6 @@
 [package]
 authors = ["Lyssieth <raxixor@rax.ee>"]
-description = "A file renaming utility."
+description = "A bulk file renaming utility."
 documentation = "https://github.com/lyssieth/rena/wiki"
 edition = "2018"
 keywords = ["utility", "tool", "cli"]
