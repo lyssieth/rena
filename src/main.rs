@@ -1,6 +1,6 @@
 /*
 MIT License
-Copyright (c) 2020 Lyssieth
+Copyright (c) 2020-2021 Lyssieth
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #![forbid(unsafe_code)]
+#![deny(missing_docs, missing_debug_implementations, missing_crate_level_docs, unused, bad_style, missing_crate_level_docs)]
+
+//! Main executable of rena.
 
 use clap::{crate_authors, crate_description, crate_version, App, Arg, ArgSettings, ValueHint};
 use color_eyre::{config::HookBuilder, Result};

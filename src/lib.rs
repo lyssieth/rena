@@ -1,6 +1,6 @@
 /*
 MIT License
-Copyright (c) 2020 Lyssieth
+Copyright (c) 2020-2021 Lyssieth
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+#![forbid(unsafe_code)]
+#![deny(missing_docs, missing_debug_implementations, missing_crate_level_docs, unused, bad_style, missing_crate_level_docs)]
+
+//! Rena is a crate fo bulk renaming of files.
+
 use clap::{ArgMatches, ErrorKind};
 use color_eyre::{eyre::eyre, Result};
 use paris::{info, warn};
@@ -33,23 +38,36 @@ use std::{
 /// All the arguments after being turned into their respective types.
 #[derive(Debug, Clone, Default)]
 pub struct Arguments {
+    /// Folder in which to act
     pub folder: PathBuf,
+    /// Whether to run on directories instead of files
     pub directory: bool,
+    /// Whether to output more logging information
     pub verbose: bool,
+    /// If renaming numerically, what number to start with
     pub origin: usize,
+    /// The prefix for the item's name
     pub prefix: String,
+    /// How much padding the number should have
     pub padding: usize,
+    /// Which direction the number should be padded in
     pub padding_direction: PaddingDirection,
+    /// A Regex to filter input items
     pub match_regex: Option<Regex>,
+    /// When renaming, this is used to apply regex capture groups
     pub match_rename: Option<String>,
+    /// Whether to not actually execute any rename operations
     pub dry_run: bool,
 }
 
 /// Direction in which to pad.
 #[derive(Debug, Clone)]
 pub enum PaddingDirection {
+    /// Pad left (00001)
     Left,
+    /// Pad right (10000)
     Right,
+    /// Pad middle (00100)
     Middle,
 }
 
@@ -141,6 +159,7 @@ impl From<ArgMatches> for Arguments {
     }
 }
 
+/// Runs rena with the given arguments.
 pub fn run(args: Arguments) -> Result<()> {
     if !args.folder.exists() {
         return Err(eyre!(format!(
@@ -173,14 +192,16 @@ pub fn run(args: Arguments) -> Result<()> {
     };
 
     if args.match_rename.is_some() {
-        rename_regex(items, args)
+        rename_regex(items, args);
     } else {
-        rename_normal(items, args)
+        rename_normal(items, args);
     }
+
+    Ok(())
 }
 
 // Janky, but it works. I think. We'll see, hopefully.
-fn rename_normal(items: Vec<PathBuf>, args: Arguments) -> Result<()> {
+fn rename_normal(items: Vec<PathBuf>, args: Arguments) {
     let verbose = args.verbose;
     let fmt = match args.padding_direction {
         PaddingDirection::Left => {
@@ -270,12 +291,10 @@ fn rename_normal(items: Vec<PathBuf>, args: Arguments) -> Result<()> {
             }
         }
     });
-
-    Ok(())
 }
 
 // TODO: Improve somehow? No idea how, but it could probably be done better than this jank.
-fn rename_regex(items: Vec<PathBuf>, args: Arguments) -> Result<()> {
+fn rename_regex(items: Vec<PathBuf>, args: Arguments) {
     let verbose = args.verbose;
 
     let regex = args.match_regex.unwrap();
@@ -342,13 +361,11 @@ fn rename_regex(items: Vec<PathBuf>, args: Arguments) -> Result<()> {
             }
         }
     });
-
-    Ok(())
 }
 
 fn filter_items<I>(read: I, dir: bool) -> Vec<PathBuf>
-where
-    I: Iterator<Item = std::io::Result<DirEntry>>,
+    where
+        I: Iterator<Item=std::io::Result<DirEntry>>,
 {
     let items = read.filter(|x| match x {
         Err(e) => {
@@ -386,8 +403,8 @@ where
 }
 
 fn filter_items_regex<I>(read: I, dir: bool, regex: &Regex) -> Vec<PathBuf>
-where
-    I: Iterator<Item = std::io::Result<DirEntry>>,
+    where
+        I: Iterator<Item=std::io::Result<DirEntry>>,
 {
     let items = read.filter(|x| match x {
         Err(e) => {
@@ -408,9 +425,9 @@ where
 
             regex.is_match(&item_name)
                 && match dir {
-                    true => item_type.is_dir(),
-                    false => item_type.is_file(),
-                }
+                true => item_type.is_dir(),
+                false => item_type.is_file(),
+            }
         }
     });
 
