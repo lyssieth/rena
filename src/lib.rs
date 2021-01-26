@@ -293,7 +293,6 @@ fn rename_normal(items: Vec<PathBuf>, args: Arguments) {
     });
 }
 
-// TODO: Improve somehow? No idea how, but it could probably be done better than this jank.
 fn rename_regex(items: Vec<PathBuf>, args: Arguments) {
     let verbose = args.verbose;
 
