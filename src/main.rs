@@ -1,6 +1,6 @@
 /*
 MIT License
-Copyright (c) 2020-2021 Lyssieth
+Copyright (c) 2020-2022 Lyssieth
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #![forbid(unsafe_code)]
-#![deny(missing_docs, missing_debug_implementations, missing_crate_level_docs, unused, bad_style, missing_crate_level_docs)]
+#![deny(
+    missing_docs,
+    missing_debug_implementations,
+    rustdoc::missing_crate_level_docs,
+    unused,
+    bad_style,
+)]
+#![warn(clippy::pedantic)]
 
 //! Main executable of rena.
 
@@ -49,14 +56,15 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 fn build_app() -> App<'static> {
     App::new("rena")
         .version(crate_version!())
         .author(crate_authors!())
-        .about(concat!(crate_description!(), "\nMore info on https://github.com/lyssieth/rena"))
+        .override_help(concat!(crate_description!(), "\nMore info on https://github.com/lyssieth/rena"))
         .arg(
             Arg::new("folder")
-                .about("Path to the folder containing items")
+                .help("Path to the folder containing items")
                 .index(1)
                 .takes_value(true)
                 .required(true)
@@ -66,21 +74,21 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("directory")
-                .about("Causes the app to act on directories instead of files.")
+                .help("Causes the app to act on directories instead of files.")
                 .takes_value(false)
                 .long("dir")
                 .required(false)
         )
         .arg(
             Arg::new("verbose")
-                .about("Turns on some (potentially) annoying logging for more verbose output.")
+                .help("Turns on some (potentially) annoying logging for more verbose output.")
                 .takes_value(false)
                 .long("verbose")
                 .required(false),
         )
         .arg(
             Arg::new("origin")
-                .about("Number to start counting at. Default: 0")
+                .help("Number to start counting at. Default: 0")
                 .takes_value(true)
                 .short('n')
                 .long("origin")
@@ -92,8 +100,7 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("prefix")
-                .about("Prefix for every file")
-                .long_about("Prefix for every file, without any delimiters.")
+                .help("Prefix for every file")
                 .takes_value(true)
                 .short('p')
                 .long("prefix")
@@ -104,7 +111,7 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("padding")
-                .about("Amount of padding to add to a file.")
+                .help("Amount of padding to add to a file.")
                 .takes_value(true)
                 .long("padding")
                 .required(false)
@@ -113,7 +120,7 @@ fn build_app() -> App<'static> {
                 .unset_setting(ArgSettings::UseValueDelimiter),
         )
         .arg(Arg::new("padding-direction")
-            .about("Changes the direction of the padding. Defaults ro `right`")
+            .help("Changes the direction of the padding. Defaults ro `right`")
             .takes_value(true)
             .long("padding-direction")
             .required(false)
@@ -121,7 +128,7 @@ fn build_app() -> App<'static> {
             .unset_setting(ArgSettings::UseValueDelimiter))
         .arg(
             Arg::new("match")
-                .about("Valid RegEx for matching input files (see 'match-rename' argument).")
+                .help("Valid RegEx for matching input files (see 'match-rename' argument).")
                 .takes_value(true)
                 .short('m')
                 .long("match")
@@ -131,8 +138,8 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("match-rename")
-                .about("Use capture groups from 'match' argument to rename files. See `--help` for more info.")
-                .long_about(
+                .help("Use capture groups from 'match' argument to rename files. See `--help` for more info.")
+                .long_help(
                     "Use capture groups from 'match' argument to rename files.
                     Capture group numbers need a `$` prefix, so `$1` for the first, 
                     `$2` for the second, and so on, with `$0` matching the entire name.
@@ -148,7 +155,7 @@ fn build_app() -> App<'static> {
         )
         .arg(
             Arg::new("dry-run")
-                .about("Disables performing actual renaming.")
+                .help("Disables performing actual renaming.")
                 .takes_value(false)
                 .long("dry-run")
                 .required(false),

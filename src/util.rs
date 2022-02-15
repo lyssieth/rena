@@ -1,6 +1,6 @@
 /*
 MIT License
-Copyright (c) 2020 Lyssieth
+Copyright (c) 2020-2022 Lyssieth
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ pub fn validate_usize(input: &str) -> Result<(), String> {
 
     match num {
         Ok(_) => Ok(()),
-        Err(e) => Err(format!("Failed to parse usize: {}", e.to_string())),
+        Err(e) => Err(format!("Failed to parse usize: {}", e)),
     }
 }
 

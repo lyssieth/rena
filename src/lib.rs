@@ -1,6 +1,6 @@
 /*
 MIT License
-Copyright (c) 2020-2021 Lyssieth
+Copyright (c) 2020-2022 Lyssieth
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #![forbid(unsafe_code)]
-#![deny(missing_docs, missing_debug_implementations, missing_crate_level_docs, unused, bad_style, missing_crate_level_docs)]
+#![deny(
+    missing_docs,
+    missing_debug_implementations,
+    rustdoc::missing_crate_level_docs,
+    unused,
+    bad_style,
+)]
+#![warn(clippy::pedantic)]
 
 //! Rena is a crate fo bulk renaming of files.
 
@@ -33,6 +40,7 @@ use std::{
     collections::HashMap,
     fs::{self, DirEntry},
     path::PathBuf,
+    string::ToString,
 };
 
 /// All the arguments after being turned into their respective types.
@@ -138,10 +146,7 @@ impl From<ArgMatches> for Arguments {
             }
             None => None,
         };
-        let match_rename = match a.value_of("match-rename") {
-            Some(a) => Some(a.to_string()),
-            None => None,
-        };
+        let match_rename = a.value_of("match-rename").map(ToString::to_string);
         let dry_run = a.is_present("dry-run");
 
         Self {
@@ -160,6 +165,20 @@ impl From<ArgMatches> for Arguments {
 }
 
 /// Runs rena with the given arguments.
+///
+///
+/// # Errors
+///
+/// Returns an error in the following circumstances:
+///
+/// - The target doesn't exist
+/// - The target is not a directory
+/// - We can't read the directory's contents
+///
+/// # Panics
+///
+/// We currently verify that the result of [`read_dir()`] is not `Err` before
+/// unwrapping it, so this shouldn't ever panic.
 pub fn run(args: Arguments) -> Result<()> {
     if !args.folder.exists() {
         return Err(eyre!(format!(
@@ -192,16 +211,16 @@ pub fn run(args: Arguments) -> Result<()> {
     };
 
     if args.match_rename.is_some() {
-        rename_regex(items, args);
+        rename_regex(&items, args);
     } else {
-        rename_normal(items, args);
+        rename_normal(&items, args);
     }
 
     Ok(())
 }
 
 // Janky, but it works. I think. We'll see, hopefully.
-fn rename_normal(items: Vec<PathBuf>, args: Arguments) {
+fn rename_normal(items: &[PathBuf], args: Arguments) {
     let verbose = args.verbose;
     let fmt = match args.padding_direction {
         PaddingDirection::Left => {
@@ -231,7 +250,7 @@ fn rename_normal(items: Vec<PathBuf>, args: Arguments) {
         .iter()
         .map(|x| {
             let ext = match x.extension() {
-                Some(x) => format!(".{}", x.to_string_lossy().to_string()),
+                Some(x) => format!(".{}", x.to_string_lossy()),
                 None => "".to_string(),
             };
             map.insert("number".to_string(), format!("{}", count));
@@ -257,7 +276,7 @@ fn rename_normal(items: Vec<PathBuf>, args: Arguments) {
         .collect::<Vec<RenameItem>>();
 
     let dry_run = args.dry_run;
-    items.iter().for_each(|x| {
+    for x in items {
         if x.new_path.exists() {
             warn!(
                 "Item `{}` already exists, unable to rename.",
@@ -290,10 +309,10 @@ fn rename_normal(items: Vec<PathBuf>, args: Arguments) {
                 ),
             }
         }
-    });
+    }
 }
 
-fn rename_regex(items: Vec<PathBuf>, args: Arguments) {
+fn rename_regex(items: &[PathBuf], args: Arguments) {
     let verbose = args.verbose;
 
     let regex = args.match_regex.unwrap();
@@ -326,7 +345,7 @@ fn rename_regex(items: Vec<PathBuf>, args: Arguments) {
         .collect::<Vec<RenameItem>>();
 
     let dry_run = args.dry_run;
-    items.iter().for_each(|x| {
+    for x in items {
         if x.new_path.exists() {
             warn!(
                 "Item `{}` already exists, unable to rename.",
@@ -359,12 +378,12 @@ fn rename_regex(items: Vec<PathBuf>, args: Arguments) {
                 ),
             }
         }
-    });
+    }
 }
 
 fn filter_items<I>(read: I, dir: bool) -> Vec<PathBuf>
-    where
-        I: Iterator<Item=std::io::Result<DirEntry>>,
+where
+    I: Iterator<Item = std::io::Result<DirEntry>>,
 {
     let items = read.filter(|x| match x {
         Err(e) => {
@@ -385,9 +404,10 @@ fn filter_items<I>(read: I, dir: bool) -> Vec<PathBuf>
 
             let item_type = item_type.unwrap();
 
-            match dir {
-                true => item_type.is_dir(),
-                false => item_type.is_file(),
+            if dir {
+                item_type.is_dir()
+            } else {
+                item_type.is_file()
             }
         }
     });
@@ -402,8 +422,8 @@ fn filter_items<I>(read: I, dir: bool) -> Vec<PathBuf>
 }
 
 fn filter_items_regex<I>(read: I, dir: bool, regex: &Regex) -> Vec<PathBuf>
-    where
-        I: Iterator<Item=std::io::Result<DirEntry>>,
+where
+    I: Iterator<Item = std::io::Result<DirEntry>>,
 {
     let items = read.filter(|x| match x {
         Err(e) => {
@@ -423,10 +443,11 @@ fn filter_items_regex<I>(read: I, dir: bool, regex: &Regex) -> Vec<PathBuf>
             let item_type = item_type.unwrap();
 
             regex.is_match(&item_name)
-                && match dir {
-                true => item_type.is_dir(),
-                false => item_type.is_file(),
-            }
+                && if dir {
+                    item_type.is_dir()
+                } else {
+                    item_type.is_file()
+                }
         }
     });
 
