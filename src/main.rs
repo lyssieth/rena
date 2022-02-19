@@ -26,13 +26,13 @@ SOFTWARE.
     missing_debug_implementations,
     rustdoc::missing_crate_level_docs,
     unused,
-    bad_style,
+    bad_style
 )]
 #![warn(clippy::pedantic)]
 
 //! Main executable of rena.
 
-use clap::{crate_authors, crate_description, crate_version, App, Arg, ArgSettings, ValueHint};
+use clap::{crate_authors, crate_description, crate_version, Arg, Command, ValueHint};
 use color_eyre::{config::HookBuilder, Result};
 use paris::{error, info};
 
@@ -57,8 +57,8 @@ fn main() -> Result<()> {
 }
 
 #[allow(clippy::too_many_lines)]
-fn build_app() -> App<'static> {
-    App::new("rena")
+fn build_app() -> Command<'static> {
+    Command::new("rena")
         .version(crate_version!())
         .author(crate_authors!())
         .override_help(concat!(crate_description!(), "\nMore info on https://github.com/lyssieth/rena"))
@@ -96,7 +96,7 @@ fn build_app() -> App<'static> {
                 .default_value("0")
                 .default_missing_value("0")
                 .validator(util::validate_usize)
-                .unset_setting(ArgSettings::UseValueDelimiter),
+                .use_value_delimiter(false)
         )
         .arg(
             Arg::new("prefix")
@@ -107,7 +107,7 @@ fn build_app() -> App<'static> {
                 .required(false)
                 .default_value("item")
                 .default_missing_value("item")
-                .unset_setting(ArgSettings::UseValueDelimiter),
+                .use_value_delimiter(false)
         )
         .arg(
             Arg::new("padding")
@@ -117,7 +117,7 @@ fn build_app() -> App<'static> {
                 .required(false)
                 .default_value("10")
                 .default_missing_value("10")
-                .unset_setting(ArgSettings::UseValueDelimiter),
+                .use_value_delimiter(false)
         )
         .arg(Arg::new("padding-direction")
             .help("Changes the direction of the padding. Defaults ro `right`")
@@ -125,7 +125,7 @@ fn build_app() -> App<'static> {
             .long("padding-direction")
             .required(false)
             .possible_values(&["left", "l", "<", "middle", "m", "|", "right", "r", ">"])
-            .unset_setting(ArgSettings::UseValueDelimiter))
+                .use_value_delimiter(false))
         .arg(
             Arg::new("match")
                 .help("Valid RegEx for matching input files (see 'match-rename' argument).")
@@ -133,7 +133,7 @@ fn build_app() -> App<'static> {
                 .short('m')
                 .long("match")
                 .required(false)
-                .unset_setting(ArgSettings::UseValueDelimiter)
+                .use_value_delimiter(false)
                 .validator(util::validate_regex),
         )
         .arg(
@@ -151,7 +151,7 @@ fn build_app() -> App<'static> {
                 .long("match-rename")
                 .requires("match")
                 .required(false)
-                .unset_setting(ArgSettings::UseValueDelimiter),
+                .use_value_delimiter(false)
         )
         .arg(
             Arg::new("dry-run")

@@ -26,7 +26,7 @@ SOFTWARE.
     missing_debug_implementations,
     rustdoc::missing_crate_level_docs,
     unused,
-    bad_style,
+    bad_style
 )]
 #![warn(clippy::pedantic)]
 
@@ -127,7 +127,7 @@ impl From<ArgMatches> for Arguments {
             // For some reason the default wasn't working here so I removed it and made it manually default
             Ok(value) => PaddingDirection::from(value),
             Err(e) => {
-                if e.kind == ErrorKind::ArgumentNotFound {
+                if e.kind() == ErrorKind::ArgumentNotFound {
                     PaddingDirection::default()
                 } else {
                     panic!("Invalid `--padding-direction argument.`")
