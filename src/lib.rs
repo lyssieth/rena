@@ -32,6 +32,9 @@ SOFTWARE.
 
 //! Rena is a crate fo bulk renaming of files.
 
+#[cfg(test)]
+mod test;
+
 use clap::{ArgMatches, ErrorKind};
 use color_eyre::{eyre::eyre, Result};
 use paris::{info, warn};

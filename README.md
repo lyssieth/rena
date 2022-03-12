@@ -67,8 +67,8 @@ After running `rena --match "\.[jpgn]+" images/`, it will result in:
 ffe_image_breaker.webm
 image3.mp4
 item_0000000000.jpg
-item_0000000001.jpg
-item_0000000002.png
+item_0000000001.png
+item_0000000002.jpg
 item_0000000003.jpg
 item_0000000004.jpg
 ```
