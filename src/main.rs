@@ -26,17 +26,19 @@ SOFTWARE.
     missing_debug_implementations,
     rustdoc::missing_crate_level_docs,
     unused,
-    bad_style
+    bad_style,
+    clippy::unwrap_used
 )]
 #![warn(clippy::pedantic)]
 
 //! Main executable of rena.
 
-use clap::{crate_authors, crate_description, crate_version, Arg, Command, ValueHint};
+use clap::{
+    builder::{NonEmptyStringValueParser, PossibleValuesParser, ValueParser},
+    crate_authors, crate_description, crate_version, Arg, ArgAction, Command, ValueHint,
+};
 use color_eyre::{config::HookBuilder, Result};
 use paris::{error, info};
-
-mod util;
 
 fn main() -> Result<()> {
     HookBuilder::default()
@@ -57,84 +59,101 @@ fn main() -> Result<()> {
 }
 
 #[allow(clippy::too_many_lines)]
-fn build_app() -> Command<'static> {
+fn build_app() -> Command {
     Command::new("rena")
         .version(crate_version!())
         .author(crate_authors!())
-        .override_help(concat!(crate_description!(), "\nMore info on https://github.com/lyssieth/rena"))
+        .about(crate_description!())
+        .after_help("For more information, visit <https://github.com/lyssieth/rena>")
         .arg(
             Arg::new("folder")
                 .help("Path to the folder containing items")
                 .index(1)
-                .takes_value(true)
                 .required(true)
                 .value_hint(ValueHint::DirPath)
+                .action(ArgAction::Set)
                 .value_name("FOLDER")
-                .validator(util::validate_directory),
+                .value_parser(ValueParser::path_buf())
         )
         .arg(
             Arg::new("directory")
                 .help("Causes the app to act on directories instead of files.")
-                .takes_value(false)
+                .action(ArgAction::SetTrue)
+                .value_hint(ValueHint::Other)
+                .value_parser(ValueParser::bool())
                 .long("dir")
                 .required(false)
         )
         .arg(
             Arg::new("verbose")
                 .help("Turns on some (potentially) annoying logging for more verbose output.")
-                .takes_value(false)
+                .action(ArgAction::SetTrue)
+                .value_hint(ValueHint::Other)
+                .value_parser(ValueParser::bool())
                 .long("verbose")
                 .required(false),
         )
         .arg(
             Arg::new("origin")
                 .help("Number to start counting at. Default: 0")
-                .takes_value(true)
                 .short('n')
                 .long("origin")
                 .required(false)
                 .default_value("0")
+                .action(ArgAction::Set)
                 .default_missing_value("0")
-                .validator(util::validate_usize)
+                .value_parser(ValueParser::new(NonEmptyStringValueParser::new()))
+                .value_hint(ValueHint::Other)
+                .value_name("INDEX")
                 .use_value_delimiter(false)
         )
         .arg(
             Arg::new("prefix")
                 .help("Prefix for every file")
-                .takes_value(true)
                 .short('p')
                 .long("prefix")
                 .required(false)
+                .action(ArgAction::Set)
+                .value_parser(ValueParser::new(NonEmptyStringValueParser::new()))
                 .default_value("item")
                 .default_missing_value("item")
+                .value_name("PREFIX")
+                .value_hint(ValueHint::Other)
                 .use_value_delimiter(false)
         )
         .arg(
             Arg::new("padding")
                 .help("Amount of padding to add to a file.")
-                .takes_value(true)
                 .long("padding")
+                .action(ArgAction::Set)
                 .required(false)
                 .default_value("10")
+                .value_parser(ValueParser::new(NonEmptyStringValueParser::new()))
                 .default_missing_value("10")
+                .value_name("PADDING")
+                .value_hint(ValueHint::Other)
                 .use_value_delimiter(false)
         )
-        .arg(Arg::new("padding-direction")
+        .arg(
+            Arg::new("padding-direction")
             .help("Changes the direction of the padding. Defaults ro `right`")
-            .takes_value(true)
             .long("padding-direction")
             .required(false)
-            .possible_values(&["left", "l", "<", "middle", "m", "|", "right", "r", ">"])
-                .use_value_delimiter(false))
+            .value_parser(PossibleValuesParser::new(["left", "l", "<", "middle", "m", "|", "right", "r", ">"]))
+                .value_hint(ValueHint::Other)
+            .action(ArgAction::Set)
+            .use_value_delimiter(false)
+        )
         .arg(
             Arg::new("match")
                 .help("Valid RegEx for matching input files (see 'match-rename' argument).")
-                .takes_value(true)
+                .action(ArgAction::Set)
+                .value_parser(ValueParser::new(NonEmptyStringValueParser::new()))
+                .value_hint(ValueHint::Other)
                 .short('m')
                 .long("match")
                 .required(false)
                 .use_value_delimiter(false)
-                .validator(util::validate_regex),
         )
         .arg(
             Arg::new("match-rename")
@@ -147,7 +166,9 @@ fn build_app() -> Command<'static> {
                     If it fails to see groups try using `${1}`, as in surround the
                     group index with `{}`.",
                 )
-                .takes_value(true)
+                .action(ArgAction::Set)
+                .value_parser(ValueParser::new(NonEmptyStringValueParser::new()))
+                .value_hint(ValueHint::Other)
                 .long("match-rename")
                 .requires("match")
                 .required(false)
@@ -156,7 +177,9 @@ fn build_app() -> Command<'static> {
         .arg(
             Arg::new("dry-run")
                 .help("Disables performing actual renaming.")
-                .takes_value(false)
+                .action(ArgAction::SetTrue)
+                .value_hint(ValueHint::Other)
+                .value_parser(ValueParser::bool())
                 .long("dry-run")
                 .required(false),
         )

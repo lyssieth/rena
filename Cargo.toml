@@ -2,7 +2,7 @@
 authors = ["Lyssieth <raxixor@rax.ee>"]
 description = "A bulk file renaming utility."
 documentation = "https://github.com/lyssieth/rena/wiki"
-edition = "2018"
+edition = "2021"
 keywords = ["utility", "tool", "cli"]
 license = "MIT"
 name = "rena"
@@ -11,16 +11,17 @@ repository = "https://github.com/lyssieth/rena"
 version = "1.3.1"
 
 [dependencies]
-clap = { version = "3.1.6", features = [
+clap = { version = "4.3.0", features = [
     "suggestions",
     "color",
     "wrap_help",
     "cargo",
+    "derive",
 ] }
-color-eyre = { version = "0.6.1", features = ["issue-url"] }
-paris = { version = "1.5.11", features = ["macros", "no_logger"] }
-regex = "1.5.5"
-strfmt = "0.1.6"
+color-eyre = { version = "0.6.2", features = ["issue-url"] }
+paris = { version = "1.5.15", features = ["macros", "no_logger"] }
+regex = "1.8.3"
+strfmt = "0.2.4"
 
 [dev-dependencies]
-tempfile = "3.3.0"
+tempfile = "3.5.0"

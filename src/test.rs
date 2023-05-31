@@ -9,17 +9,17 @@ use tempfile::tempdir;
 
 fn setup_files_for_test(path: &Path, filenames: &[&str]) {
     for x in filenames {
-        File::create(path.join(x)).unwrap_or_else(|_| panic!("failed to create file {}", x));
+        File::create(path.join(x)).unwrap_or_else(|_| panic!("failed to create file {x}"));
     }
 }
 
 fn check_filenames(path: &Path, filenames: &[&str]) {
-    for x in path.read_dir().unwrap() {
-        dbg!(x.unwrap());
+    for x in path.read_dir().expect("failed to read directory") {
+        dbg!(x.expect("failed to read directory entry"));
     }
 
     for x in filenames {
-        assert!(path.join(x).exists(), "file {} does not exist", x);
+        assert!(path.join(x).exists(), "file {x} does not exist");
     }
 }
 
@@ -41,6 +41,7 @@ fn simple_rename() {
     let args = Arguments {
         folder: PathBuf::from(path.path()),
         prefix: "item".to_owned(),
+        verbose: true,
         padding: 10,
         ..Arguments::default()
     };
@@ -61,7 +62,7 @@ fn regex_filtering() {
         "12746uju21.jpg",
         "17f29a002.jpg",
         "17f2121wss.png",
-        "ffe_image_breaker.webm",
+        "a_video.webm",
         "potential_effort.jpg",
     ];
     const REGEX_EXPECTED: &[&str] = &[
@@ -70,7 +71,7 @@ fn regex_filtering() {
         "item_0000000002.jpg",
         "item_0000000003.jpg",
         "item_0000000004.jpg",
-        "ffe_image_breaker.webm",
+        "a_video.webm",
         "image3.mp4",
     ];
 
@@ -81,6 +82,7 @@ fn regex_filtering() {
         folder: PathBuf::from(path.path()),
         prefix: "item".to_owned(),
         padding: 10,
+        verbose: true,
         match_regex: Some(Regex::new(r"\.[jpgn]+").expect("failed to compile regex")),
         ..Arguments::default()
     };
@@ -121,6 +123,7 @@ fn usage_for_shows() {
             Regex::new(r"Show\.S(\d+)E(\d+)\.1080p\.mkv").expect("failed to compile regex"),
         ),
         match_rename: Some(r"Show S${1} E${2} (1080p).mkv".to_owned()),
+        verbose: true,
         ..Arguments::default()
     };
 

@@ -25,8 +25,9 @@ SOFTWARE.
     missing_docs,
     missing_debug_implementations,
     rustdoc::missing_crate_level_docs,
-    unused,
-    bad_style
+    // unused,
+    bad_style,
+    clippy::unwrap_used
 )]
 #![warn(clippy::pedantic)]
 
@@ -35,7 +36,7 @@ SOFTWARE.
 #[cfg(test)]
 mod test;
 
-use clap::{ArgMatches, ErrorKind};
+use clap::{parser::MatchesError, ArgMatches};
 use color_eyre::{eyre::eyre, Result};
 use paris::{info, warn};
 use regex::Regex;
@@ -72,9 +73,10 @@ pub struct Arguments {
 }
 
 /// Direction in which to pad.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum PaddingDirection {
     /// Pad left (00001)
+    #[default]
     Left,
     /// Pad right (10000)
     Right,
@@ -82,9 +84,18 @@ pub enum PaddingDirection {
     Middle,
 }
 
-impl Default for PaddingDirection {
-    fn default() -> Self {
-        PaddingDirection::Right
+impl From<&String> for PaddingDirection {
+    fn from(a: &String) -> Self {
+        let a = a.to_lowercase();
+
+        match a.as_ref() {
+            "left" | "l" | "<" => PaddingDirection::Left,
+            "right" | "r" | ">" => PaddingDirection::Right,
+            "middle" | "m" | "|" => PaddingDirection::Middle,
+            _ => unreachable!(
+                "If this is reached, something in validation has gone *horribly* wrong."
+            ),
+        }
     }
 }
 
@@ -113,44 +124,58 @@ struct RenameItem {
 impl From<ArgMatches> for Arguments {
     fn from(a: ArgMatches) -> Self {
         let folder = a
-            .value_of_t::<PathBuf>("folder")
+            .get_one::<PathBuf>("folder")
+            .cloned()
             .expect("Unable to turn 'folder' argument into path");
-        let directory = a.is_present("directory");
-        let verbose = a.is_present("verbose");
-        let origin = a
-            .value_of_t::<usize>("origin")
+        let directory = a.get_flag("directory");
+        let verbose = a.get_flag("verbose");
+        let origin = *a
+            .get_one::<usize>("origin")
             .expect("Unable to turn 'origin' argument into usize");
         let prefix = a
-            .value_of_t::<String>("prefix")
+            .get_one::<String>("prefix")
+            .cloned()
             .expect("Unable to find 'prefix' argument or use default");
-        let padding = a
-            .value_of_t::<usize>("padding")
+        let padding = *a
+            .get_one::<usize>("padding")
             .expect("Unable to turn 'padding' argument into usize");
-        let padding_direction = match a.value_of_t::<String>("padding_direction") {
+        let padding_direction = match a.try_get_one::<String>("padding_direction") {
             // For some reason the default wasn't working here so I removed it and made it manually default
-            Ok(value) => PaddingDirection::from(value),
-            Err(e) => {
-                if e.kind() == ErrorKind::ArgumentNotFound {
-                    PaddingDirection::default()
+            Ok(value) => {
+                if let Some(value) = value {
+                    PaddingDirection::from(value)
                 } else {
-                    panic!("Invalid `--padding-direction argument.`")
+                    PaddingDirection::default()
                 }
             }
+            Err(e) => match e {
+                MatchesError::UnknownArgument { .. } => PaddingDirection::default(),
+                _ => panic!("Invalid `--padding-direction argument.`"),
+            },
         };
-        let match_regex = match a.value_of("match") {
-            Some(regex) => {
+        let match_regex = match a.try_get_one::<String>("match") {
+            Ok(Some(regex)) => {
                 let a = Regex::new(regex);
                 match a {
                     Ok(a) => Some(a),
                     Err(e) => {
-                        panic!("Unable to parse regex `{}`: {}", regex, e);
+                        panic!("Unable to parse regex `{regex}`: {e}");
                     }
                 }
             }
-            None => None,
+            Ok(None) => None,
+            Err(e) => {
+                panic!("Invalid `--match` argument: {e}");
+            }
         };
-        let match_rename = a.value_of("match-rename").map(ToString::to_string);
-        let dry_run = a.is_present("dry-run");
+        let match_rename = match a.try_get_one::<String>("match-rename") {
+            Ok(Some(a)) => Some(a.clone()),
+            Ok(None) => None,
+            Err(e) => {
+                panic!("Invalid `--match-rename` argument: {e}");
+            }
+        };
+        let dry_run = a.get_flag("dry-run");
 
         Self {
             folder,
@@ -206,7 +231,7 @@ pub fn run(args: Arguments) -> Result<()> {
             e
         )));
     }
-    let read = read.unwrap();
+    let read = read.expect("Failed to read directory");
 
     let items = match &args.match_regex {
         Some(r) => filter_items_regex(read, args.directory, r),
@@ -227,10 +252,10 @@ fn rename_normal(items: &[PathBuf], args: Arguments) {
     let verbose = args.verbose;
     let fmt = match args.padding_direction {
         PaddingDirection::Left => {
-            "{folder}/{prefix}_{number:0<NUM}{ext}".replace("NUM", &format!("{}", args.padding))
+            "{folder}/{prefix}_{number:0>NUM}{ext}".replace("NUM", &format!("{}", args.padding))
         }
         PaddingDirection::Right => {
-            "{folder}/{prefix}_{number:0>NUM}{ext}".replace("NUM", &format!("{}", args.padding))
+            "{folder}/{prefix}_{number:0<NUM}{ext}".replace("NUM", &format!("{}", args.padding))
         }
         PaddingDirection::Middle => {
             "{folder}/{prefix}_{number:0|NUM}{ext}".replace("NUM", &format!("{}", args.padding))
@@ -254,15 +279,17 @@ fn rename_normal(items: &[PathBuf], args: Arguments) {
         .map(|x| {
             let ext = match x.extension() {
                 Some(x) => format!(".{}", x.to_string_lossy()),
-                None => "".to_string(),
+                None => String::new(),
             };
-            map.insert("number".to_string(), format!("{}", count));
+            map.insert("number".to_string(), format!("{count}"));
             map.insert("ext".to_string(), ext);
             count += 1;
 
             RenameItem {
                 original_path: x.clone(),
-                new_path: strfmt::strfmt(&fmt, &map).unwrap().into(),
+                new_path: strfmt::strfmt(&fmt, &map)
+                    .expect("String formatting failed")
+                    .into(),
             }
         })
         .filter(|x| {
@@ -318,12 +345,15 @@ fn rename_normal(items: &[PathBuf], args: Arguments) {
 fn rename_regex(items: &[PathBuf], args: Arguments) {
     let verbose = args.verbose;
 
-    let regex = args.match_regex.unwrap();
-    let match_rename = args.match_rename.unwrap();
+    let regex = args.match_regex.expect("Regex is None");
+    let match_rename = args.match_rename.expect("Match rename is None");
     let items = items
         .iter()
         .map(|x| {
-            let text = x.file_name().unwrap().to_string_lossy();
+            let text = x
+                .file_name()
+                .expect("there to be a filename")
+                .to_string_lossy();
             let after = regex.replace(&text, match_rename.as_str()).to_string();
             let mut new_x = x.clone();
 
@@ -405,7 +435,7 @@ where
                 return false;
             }
 
-            let item_type = item_type.unwrap();
+            let item_type = item_type.expect("item_type is None");
 
             if dir {
                 item_type.is_dir()
@@ -417,7 +447,7 @@ where
 
     items
         .map(|x| {
-            let x = x.unwrap();
+            let x = x.expect("item is None");
 
             x.path()
         })
@@ -443,7 +473,7 @@ where
                 return false;
             }
 
-            let item_type = item_type.unwrap();
+            let item_type = item_type.expect("item_type is None");
 
             regex.is_match(&item_name)
                 && if dir {
@@ -456,7 +486,7 @@ where
 
     items
         .map(|x| {
-            let x = x.unwrap();
+            let x = x.expect("item is None");
 
             x.path()
         })
