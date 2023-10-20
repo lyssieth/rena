@@ -9,6 +9,7 @@ name = "rena"
 readme = "README.md"
 repository = "https://github.com/lyssieth/rena"
 version = "1.4.0"
+publish = ["crates-io"]
 
 [dependencies]
 clap = { version = "4.4.6", features = [
