@@ -29,7 +29,7 @@ SOFTWARE.
     bad_style,
     clippy::unwrap_used
 )]
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, clippy::nursery)]
 
 //! Main executable of rena.
 
@@ -51,8 +51,8 @@ fn main() -> Result<()> {
     let matches = app.get_matches();
 
     info!("Starting execution...");
-    match rena::run(matches.into()) {
-        Ok(_) => info!("Completed successfully!"),
+    match rena::run(matches.try_into()?) {
+        Ok(()) => info!("Completed successfully!"),
         Err(e) => error!("Encountered an error: {}", e),
     }
     Ok(())

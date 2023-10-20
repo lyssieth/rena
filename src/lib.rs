@@ -29,7 +29,7 @@ SOFTWARE.
     bad_style,
     clippy::unwrap_used
 )]
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, clippy::nursery)]
 
 //! Rena is a crate fo bulk renaming of files.
 
@@ -37,7 +37,7 @@ SOFTWARE.
 mod test;
 
 use clap::{parser::MatchesError, ArgMatches};
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{eyre::eyre, Report, Result};
 use paris::{info, warn};
 use regex::Regex;
 use std::{
@@ -89,9 +89,9 @@ impl From<&String> for PaddingDirection {
         let a = a.to_lowercase();
 
         match a.as_ref() {
-            "left" | "l" | "<" => PaddingDirection::Left,
-            "right" | "r" | ">" => PaddingDirection::Right,
-            "middle" | "m" | "|" => PaddingDirection::Middle,
+            "left" | "l" | "<" => Self::Left,
+            "right" | "r" | ">" => Self::Right,
+            "middle" | "m" | "|" => Self::Middle,
             _ => unreachable!(
                 "If this is reached, something in validation has gone *horribly* wrong."
             ),
@@ -104,9 +104,9 @@ impl From<String> for PaddingDirection {
         let a = a.to_lowercase();
 
         match a.as_ref() {
-            "left" | "l" | "<" => PaddingDirection::Left,
-            "right" | "r" | ">" => PaddingDirection::Right,
-            "middle" | "m" | "|" => PaddingDirection::Middle,
+            "left" | "l" | "<" => Self::Left,
+            "right" | "r" | ">" => Self::Right,
+            "middle" | "m" | "|" => Self::Middle,
             _ => unreachable!(
                 "If this is reached, something in validation has gone *horribly* wrong."
             ),
@@ -121,63 +121,55 @@ struct RenameItem {
     pub new_path: PathBuf,
 }
 
-impl From<ArgMatches> for Arguments {
-    fn from(a: ArgMatches) -> Self {
+impl TryFrom<ArgMatches> for Arguments {
+    type Error = Report;
+
+    fn try_from(a: ArgMatches) -> Result<Self, Self::Error> {
         let folder = a
             .get_one::<PathBuf>("folder")
             .cloned()
-            .expect("Unable to turn 'folder' argument into path");
+            .ok_or_else(|| Report::msg("Unable to turn 'folder' argument into path"))?;
         let directory = a.get_flag("directory");
         let verbose = a.get_flag("verbose");
-        let origin = *a
+        let origin = a
             .get_one::<usize>("origin")
-            .expect("Unable to turn 'origin' argument into usize");
+            .copied()
+            .ok_or_else(|| Report::msg("Unable to turn 'origin' argument into usize"))?;
         let prefix = a
             .get_one::<String>("prefix")
             .cloned()
-            .expect("Unable to find 'prefix' argument or use default");
-        let padding = *a
+            .ok_or_else(|| Report::msg("Unable to find 'prefix' argument or use default"))?;
+        let padding = a
             .get_one::<usize>("padding")
-            .expect("Unable to turn 'padding' argument into usize");
+            .copied()
+            .ok_or_else(|| Report::msg("Unable to turn 'padding' argument into usize"))?;
         let padding_direction = match a.try_get_one::<String>("padding_direction") {
             // For some reason the default wasn't working here so I removed it and made it manually default
-            Ok(value) => {
-                if let Some(value) = value {
-                    PaddingDirection::from(value)
-                } else {
-                    PaddingDirection::default()
-                }
-            }
+            Ok(value) => value.map_or_else(PaddingDirection::default, PaddingDirection::from),
             Err(e) => match e {
                 MatchesError::UnknownArgument { .. } => PaddingDirection::default(),
-                _ => panic!("Invalid `--padding-direction argument.`"),
+                _ => return Err(Report::msg("Invalid `--padding-direction argument.`")),
             },
         };
         let match_regex = match a.try_get_one::<String>("match") {
-            Ok(Some(regex)) => {
-                let a = Regex::new(regex);
-                match a {
-                    Ok(a) => Some(a),
-                    Err(e) => {
-                        panic!("Unable to parse regex `{regex}`: {e}");
-                    }
-                }
-            }
+            Ok(Some(regex)) => Some(Regex::new(regex)?),
             Ok(None) => None,
             Err(e) => {
-                panic!("Invalid `--match` argument: {e}");
+                return Err(Report::msg(format!("Invalid `--match` argument: {e}")));
             }
         };
         let match_rename = match a.try_get_one::<String>("match-rename") {
             Ok(Some(a)) => Some(a.clone()),
             Ok(None) => None,
             Err(e) => {
-                panic!("Invalid `--match-rename` argument: {e}");
+                return Err(Report::msg(format!(
+                    "Invalid `--match-rename` argument: {e}"
+                )));
             }
         };
         let dry_run = a.get_flag("dry-run");
 
-        Self {
+        Ok(Self {
             folder,
             directory,
             verbose,
@@ -188,7 +180,7 @@ impl From<ArgMatches> for Arguments {
             match_regex,
             match_rename,
             dry_run,
-        }
+        })
     }
 }
 
@@ -277,10 +269,9 @@ fn rename_normal(items: &[PathBuf], args: Arguments) {
     let items = items
         .iter()
         .map(|x| {
-            let ext = match x.extension() {
-                Some(x) => format!(".{}", x.to_string_lossy()),
-                None => String::new(),
-            };
+            let ext = x
+                .extension()
+                .map_or_else(String::new, |x| format!(".{}", x.to_string_lossy()));
             map.insert("number".to_string(), format!("{count}"));
             map.insert("ext".to_string(), ext);
             count += 1;
@@ -322,7 +313,7 @@ fn rename_normal(items: &[PathBuf], args: Arguments) {
             );
         } else {
             match fs::rename(&x.original_path, &x.new_path) {
-                Ok(_) => {
+                Ok(()) => {
                     if verbose {
                         info!(
                             "[DONE] `{}` -> `{}`",
@@ -394,7 +385,7 @@ fn rename_regex(items: &[PathBuf], args: Arguments) {
             );
         } else {
             match fs::rename(&x.original_path, &x.new_path) {
-                Ok(_) => {
+                Ok(()) => {
                     if verbose {
                         info!(
                             "[DONE] `{}` -> `{}`",
